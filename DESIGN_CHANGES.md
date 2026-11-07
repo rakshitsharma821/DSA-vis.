@@ -82,6 +82,46 @@ review checklist before pushing to GitHub.
 
 ---
 
+## 9. Premium locked preview, algorithm selector & sidebar motion
+
+### 9a. Login-gated Live Visualizer Preview (`src/pages/HomePage.tsx`)
+
+- Signed-out visitors see the preview **blurred** (`backdrop-filter: blur(12px)` + a soft
+  white gradient overlay) with a centered `PreviewLockCard`:
+  violet-glow Lock icon, "Unlock Interactive Learning", the prescribed supporting copy,
+  primary CTA **Sign In to Explore** and secondary **Create your free account** — both call
+  the existing `openLoginModal('user')`.
+- The stage subtree gets the native `inert` attribute (via `useRef` + `useEffect`) and
+  `aria-hidden`, so pointer **and** keyboard interaction are blocked while it stays visible.
+  `inert`/overlay unmount the moment `useAuth().isAuthenticated` flips — no local or fake
+  login state exists anywhere.
+- The blur is a **visual gate only**; server-side authorization is untouched.
+
+### 9b. Single-row algorithm selector (`src/pages/HomePage.tsx`)
+
+- Sliding Window · DP Matrix (0/1 Knapsack) · Balanced AVL Tree · Dijkstra Shortest Path are
+  one horizontal row: larger pill buttons, Lucide icons (`Sliders`/`Grid`/`Network`/`Compass`),
+  violet active state (`aria-pressed`), white inactive with soft borders, hover/pressed
+  motion, `overflow-x-auto` scrolling on narrow screens.
+- Selectable while locked — the stage updates but stays blurred/inert until login.
+  No algorithm added, removed or re-implemented.
+
+### 9c. Sidebar (`src/components/layout/AppSidebar.tsx`)
+
+- Curved expand/collapse: `transition-[width,box-shadow]` with
+  `cubic-bezier(0.22,1,0.36,1)` (430 ms); labels animate width + opacity + horizontal
+  translate with a 70 ms stagger on open and none on close. No bounce.
+- **All six sections always visible** (Home, Topics, Observatory, Solve a Problem,
+  Compare & Learn, Contests) — even signed out. Auth gating is preserved: `App.tsx`
+  `handleNavigate` still opens the login modal for protected views, and locked items show a
+  small lock badge (corner badge collapsed, trailing lock expanded).
+- WORKSPACE section label fixed: flex + fixed height keeps the 9 px caption vertically
+  centered so the height animation can never clip it.
+- Identity, NavView/onNavigate contracts, pin persistence, tooltips, mobile drawer
+  (backdrop, Escape, close-on-navigate) and keyboard focus rings unchanged. No React Router.
+
+---
+
 ## Files changed (vs `DSA-vis/frontend`)
 
 | File | Diff |
@@ -107,11 +147,17 @@ review checklist before pushing to GitHub.
 
 ## Verification checklist
 
-- [ ] `npx tsc -b` passes (last run: pass)
-- [ ] `npm run build` passes
+- [x] `npx tsc -b` passes (re-run after locked-preview + sidebar changes: pass)
+- [x] `npm run build` passes (2659 modules, 7.6 s, only pre-existing zod/chunk warnings)
 - [ ] Home, Topics, Visualizer, Compare, Contests, Problem Solver all load
 - [ ] Signed-out and signed-in states
-- [ ] Sidebar collapsed / expanded / pinned / mobile drawer
+- [x] Sidebar collapsed / expanded / pinned (signed-out: all 6 sections render; WORKSPACE
+      label measured fully visible, opacity 1; clicking a locked section opens the login
+      modal and stays on `?view=home`)
+- [ ] Mobile drawer (needs a narrow viewport — desktop browser window was hidden)
+- [x] Locked preview: `inert` + `aria-hidden` on stage, `blur(12px)` overlay, lock card,
+      CTA opens login modal, algorithm selector single row + selectable while locked
+- [ ] Blur removed immediately after a real login (needs real credentials)
 - [ ] `Ctrl/Cmd+K`, Ask AI, audio toggle, profile/logout
 - [ ] No horizontal overflow at 375px and 1440px
 - [ ] Sliding-window / DP showcase text visible (dark-variant fix)
