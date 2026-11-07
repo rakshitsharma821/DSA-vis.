@@ -14,8 +14,8 @@ export const ComplexityChart: React.FC = () => {
 
   if (!chartData || chartData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground text-xs">
-        No operational metrics recorded yet.
+      <div className="flex h-48 items-center justify-center px-4 text-center text-xs text-aurora-muted">
+        Comparison and swap counters will appear here once the trace starts.
       </div>
     );
   }
@@ -49,11 +49,12 @@ export const ComplexityChart: React.FC = () => {
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: 'hsl(var(--card))',
-              borderColor: 'hsl(var(--border))',
+              backgroundColor: '#ffffff',
+              borderColor: '#e5e7f0',
               borderRadius: '8px',
               fontSize: '11px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              color: '#172554',
+              boxShadow: '0 8px 20px -12px rgba(23,37,84,0.35)',
             }}
           />
           <Area

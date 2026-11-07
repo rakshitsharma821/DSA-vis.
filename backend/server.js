@@ -37,8 +37,19 @@ for (const envPath of candidateEnvFiles) {
   }
 }
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.PORT || process.env.BACKEND_PORT || '3001', 10);
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
+function getAvailablePort(portToTry) {
+  return new Promise((resolve) => {
+    const tester = http.createServer();
+    tester.once('error', () => resolve(portToTry + 1));
+    tester.once('listening', () => {
+      tester.close(() => resolve(portToTry));
+    });
+    tester.listen(portToTry, '127.0.0.1');
+  });
+}
 
 // Security Headers & CORS origin validator
 export function applySecurityHeaders(req, res) {
@@ -187,10 +198,14 @@ const server = http.createServer((req, res) => {
 const isMainModule = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isMainModule) {
-  server.listen(PORT, async () => {
-    console.log(`[AlgoViz Secure Server] Running at http://localhost:${PORT} in ${NODE_ENV} mode`);
-    await initMongo();
-  });
+  const startServer = async () => {
+    const resolvedPort = await getAvailablePort(PORT);
+    server.listen(resolvedPort, async () => {
+      console.log(`[AlgoViz Secure Server] Running at http://localhost:${resolvedPort} in ${NODE_ENV} mode`);
+      await initMongo();
+    });
+  };
+  startServer();
 }
 
 export { server };

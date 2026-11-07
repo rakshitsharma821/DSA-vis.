@@ -3,13 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StepAction } from '../../types';
 import { useAlgorithmStore } from '../../store/useAlgorithmStore';
 import {
-  HelpCircle,
   Sparkles,
   ChevronDown,
   Bot,
   Scale,
   ArrowRightLeft,
-  Search,
   CheckCircle2,
   Trash2,
   ArrowRight,
@@ -58,73 +56,73 @@ export const WhyPopup: React.FC<WhyPopupProps> = ({ step, onAskAI }) => {
     return null;
   }
 
-  // Type-based aesthetic cosmic styling
+  // Light Aurora styling per step type: colour, border and soft gradient
   const getTypeConfig = () => {
     switch (stepType) {
       case 'compare':
         return {
           icon: Scale,
-          color: 'text-amber-400',
-          border: 'border-amber-500/40',
-          bg: 'from-amber-950/40 to-slate-950/80',
-          badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+          color: 'text-amber-600',
+          border: 'border-amber-200',
+          bg: 'from-amber-50 to-white',
+          badge: 'bg-amber-50 text-amber-700 border-amber-200',
         };
       case 'swap':
         return {
           icon: ArrowRightLeft,
-          color: 'text-fuchsia-400',
-          border: 'border-fuchsia-500/40',
-          bg: 'from-fuchsia-950/40 to-slate-950/80',
-          badge: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
+          color: 'text-fuchsia-600',
+          border: 'border-fuchsia-200',
+          bg: 'from-fuchsia-50 to-white',
+          badge: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
         };
       case 'found':
       case 'sorted':
         return {
           icon: CheckCircle2,
-          color: 'text-yellow-400',
-          border: 'border-yellow-500/50 shadow-[0_0_20px_rgba(250,204,21,0.25)]',
-          bg: 'from-yellow-950/40 to-slate-950/90',
-          badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+          color: 'text-emerald-600',
+          border: 'border-emerald-200',
+          bg: 'from-emerald-50 to-white',
+          badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         };
       case 'discard':
         return {
           icon: Trash2,
-          color: 'text-slate-400',
-          border: 'border-slate-600/40',
-          bg: 'from-slate-950/80 to-black/90',
-          badge: 'bg-slate-700/30 text-slate-300 border-slate-600/30',
+          color: 'text-slate-600',
+          border: 'border-slate-200',
+          bg: 'from-slate-50 to-white',
+          badge: 'bg-slate-100 text-slate-600 border-slate-200',
         };
       case 'mismatch':
         return {
           icon: ShieldAlert,
-          color: 'text-rose-400',
-          border: 'border-rose-500/40',
-          bg: 'from-rose-950/40 to-slate-950/80',
-          badge: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+          color: 'text-rose-600',
+          border: 'border-rose-200',
+          bg: 'from-rose-50 to-white',
+          badge: 'bg-rose-50 text-rose-700 border-rose-200',
         };
       case 'backtrack':
         return {
           icon: ShieldAlert,
-          color: 'text-purple-400',
-          border: 'border-purple-500/40',
-          bg: 'from-purple-950/40 to-slate-950/80',
-          badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+          color: 'text-violet-600',
+          border: 'border-violet-200',
+          bg: 'from-violet-50 to-white',
+          badge: 'bg-violet-50 text-violet-700 border-violet-200',
         };
       case 'pointer':
         return {
           icon: ArrowRight,
-          color: 'text-cyan-400',
-          border: 'border-cyan-500/40',
-          bg: 'from-cyan-950/40 to-slate-950/80',
-          badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+          color: 'text-cyan-600',
+          border: 'border-cyan-200',
+          bg: 'from-cyan-50 to-white',
+          badge: 'bg-cyan-50 text-cyan-700 border-cyan-200',
         };
       default:
         return {
           icon: Sparkles,
-          color: 'text-indigo-400',
-          border: 'border-indigo-500/30',
-          bg: 'from-indigo-950/30 to-slate-950/80',
-          badge: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+          color: 'text-indigo-600',
+          border: 'border-indigo-200',
+          bg: 'from-indigo-50 to-white',
+          badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
         };
     }
   };
@@ -133,7 +131,7 @@ export const WhyPopup: React.FC<WhyPopupProps> = ({ step, onAskAI }) => {
   const Icon = config.icon;
 
   return (
-    <div className="w-full max-w-xl mx-auto my-2 select-none relative z-20">
+    <div className="relative z-20 mx-auto my-2 w-full max-w-xl select-none">
       {/* Hidden ARIA announcer for screen readers */}
       <div className="sr-only" role="status" aria-live="polite">
         {reason.action}: {reason.why} Triggered by rule {reason.rule}.
@@ -147,44 +145,47 @@ export const WhyPopup: React.FC<WhyPopupProps> = ({ step, onAskAI }) => {
           exit={{ opacity: 0, y: -4, scale: 0.98 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className={cn(
-            'relative overflow-hidden rounded-xl border p-3.5 backdrop-blur-xl shadow-xl bg-gradient-to-b',
+            'relative overflow-hidden rounded-xl border bg-gradient-to-b p-3.5 shadow-aurora-md',
             config.bg,
             config.border
           )}
         >
           {/* Subtle pointer anchor arrow */}
-          <div className="absolute -top-1.5 left-8 w-3 h-3 rotate-45 border-l border-t border-inherit bg-[#0b1020]" />
+          <div className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 border-l border-t border-inherit bg-white" />
 
           {/* Top Row: Action Chip + Condition Rule Badge */}
-          <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <Icon className={cn('w-4 h-4 shrink-0', config.color)} />
-              <span className={cn('text-[11px] font-mono font-semibold px-2 py-0.5 rounded border', config.badge)}>
+              <Icon className={cn('h-4 w-4 shrink-0', config.color)} />
+              <span className={cn('rounded border px-2 py-0.5 font-mono text-[11px] font-semibold', config.badge)}>
                 {reason.action}
               </span>
             </div>
 
-            <div className="flex items-center gap-1 text-[10px] font-mono text-muted-foreground bg-black/40 px-2 py-0.5 rounded border border-white/5">
-              <span className="text-muted-foreground/60">Rule:</span>
-              <span className="text-cyan-300 font-medium">{reason.rule}</span>
+            <div className="flex items-center gap-1 rounded border border-aurora-border bg-white/80 px-2 py-0.5 font-mono text-[10px] text-aurora-muted">
+              <span className="text-aurora-muted/70">Rule:</span>
+              <span className="font-medium text-aurora-text">{reason.rule}</span>
             </div>
           </div>
 
-          {/* Reason in Plain Sentence with Real Values */}
-          <p className="text-xs sm:text-sm font-medium text-foreground leading-snug tracking-tight mb-2">
+          {/* Reason in a plain sentence with real values */}
+          <p className="mb-2 text-xs font-medium leading-snug tracking-tight text-aurora-text sm:text-sm">
             {reason.why}
           </p>
 
           {/* Bottom Bar: "More why" expander + "Ask AI about this step" button */}
-          <div className="flex items-center justify-between pt-1 border-t border-white/5 gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-aurora-border/80 pt-1">
             {reason.details ? (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="text-[11px] text-muted-foreground hover:text-cyan-400 flex items-center gap-1 transition-colors cursor-pointer group"
+                className="group flex cursor-pointer items-center gap-1 text-[11px] text-aurora-muted transition-colors hover:text-aurora-primary"
               >
                 <span>{isExpanded ? 'Less' : 'More why'}</span>
                 <ChevronDown
-                  className={cn('w-3 h-3 transition-transform text-muted-foreground/70 group-hover:text-cyan-400', isExpanded && 'rotate-180')}
+                  className={cn(
+                    'h-3 w-3 text-aurora-muted/70 transition-transform group-hover:text-aurora-primary',
+                    isExpanded && 'rotate-180'
+                  )}
                 />
               </button>
             ) : (
@@ -195,16 +196,16 @@ export const WhyPopup: React.FC<WhyPopupProps> = ({ step, onAskAI }) => {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-[10px] font-mono px-2 gap-1 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
+                className="h-6 cursor-pointer gap-1 px-2 font-mono text-[10px] text-aurora-primary hover:bg-aurora-primary-soft hover:text-aurora-primary-ink"
                 onClick={() => onAskAI(`Explain step: ${reason.action}. Why: ${reason.why} (Rule: ${reason.rule})`)}
               >
-                <Bot className="w-3 h-3" />
+                <Bot className="h-3 w-3" />
                 <span>Ask AI about this step</span>
               </Button>
             )}
           </div>
 
-          {/* Deeper Intuition Expanded View */}
+          {/* Deeper intuition expanded view */}
           <AnimatePresence>
             {isExpanded && reason.details && (
               <motion.div
@@ -212,10 +213,10 @@ export const WhyPopup: React.FC<WhyPopupProps> = ({ step, onAskAI }) => {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className="overflow-hidden mt-2 pt-2 border-t border-white/5"
+                className="mt-2 overflow-hidden border-t border-aurora-border/80 pt-2"
               >
-                <p className="text-[11px] text-muted-foreground/90 font-mono leading-relaxed bg-black/30 p-2 rounded-lg border border-white/5">
-                  💡 {reason.details}
+                <p className="rounded-lg border border-aurora-border bg-white/80 p-2 font-mono text-[11px] leading-relaxed text-aurora-muted">
+                  {reason.details}
                 </p>
               </motion.div>
             )}

@@ -34,6 +34,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'algoviz_auth_token';
 const USER_KEY = 'algoviz_auth_user';
 
+async function parseJsonResponse(resp: Response) {
+  const text = await resp.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    const fallbackMessage = resp.ok
+      ? 'The server returned an unexpected response. Please try again.'
+      : 'The server returned an unexpected response. Please try again.';
+    return { error: fallbackMessage };
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -128,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
       if (!resp.ok) {
         return { success: false, message: data.error || 'Failed to send OTP' };
       }
@@ -146,15 +160,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
       if (!resp.ok) {
         return { success: false, message: data.error || 'Student login failed' };
       }
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      const tokenValue = data.token;
+      const userValue = data.user;
+      if (!tokenValue || !userValue) {
+        return { success: false, message: 'Login succeeded but response was incomplete.' };
+      }
+
+      setToken(tokenValue);
+      setUser(userValue);
+      localStorage.setItem(TOKEN_KEY, tokenValue);
+      localStorage.setItem(USER_KEY, JSON.stringify(userValue));
       setIsLoginModalOpen(false);
       return { success: true, message: data.message };
     } catch (err: any) {
@@ -170,15 +190,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
       if (!resp.ok) {
         return { success: false, message: data.error || 'Login failed' };
       }
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      const tokenValue = data.token;
+      const userValue = data.user;
+      if (!tokenValue || !userValue) {
+        return { success: false, message: 'Login succeeded but response was incomplete.' };
+      }
+
+      setToken(tokenValue);
+      setUser(userValue);
+      localStorage.setItem(TOKEN_KEY, tokenValue);
+      localStorage.setItem(USER_KEY, JSON.stringify(userValue));
       setIsLoginModalOpen(false);
       return { success: true, message: data.message };
     } catch (err: any) {
@@ -194,15 +220,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
       if (!resp.ok) {
         return { success: false, message: data.error || 'Admin login failed' };
       }
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      const tokenValue = data.token;
+      const userValue = data.user;
+      if (!tokenValue || !userValue) {
+        return { success: false, message: 'Login succeeded but response was incomplete.' };
+      }
+
+      setToken(tokenValue);
+      setUser(userValue);
+      localStorage.setItem(TOKEN_KEY, tokenValue);
+      localStorage.setItem(USER_KEY, JSON.stringify(userValue));
       setIsLoginModalOpen(false);
       return { success: true, message: data.message };
     } catch (err: any) {
@@ -218,15 +250,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await resp.json();
+      const data = await parseJsonResponse(resp);
       if (!resp.ok) {
         return { success: false, message: data.error || 'Admin login failed' };
       }
 
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      const tokenValue = data.token;
+      const userValue = data.user;
+      if (!tokenValue || !userValue) {
+        return { success: false, message: 'Login succeeded but response was incomplete.' };
+      }
+
+      setToken(tokenValue);
+      setUser(userValue);
+      localStorage.setItem(TOKEN_KEY, tokenValue);
+      localStorage.setItem(USER_KEY, JSON.stringify(userValue));
       setIsLoginModalOpen(false);
       return { success: true, message: data.message };
     } catch (err: any) {

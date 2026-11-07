@@ -10,7 +10,6 @@ import {
   Volume2,
   VolumeX,
   PauseCircle,
-  HelpCircle,
 } from 'lucide-react';
 import { useAlgorithmStore } from '../../store/useAlgorithmStore';
 import { Button } from '../ui/button';
@@ -85,13 +84,14 @@ export const PlaybackControls: React.FC = () => {
   }, [isPlaying, speed, stepForward]);
 
   return (
-    <div className="w-full bg-[#0b1020]/80 backdrop-blur-xl border-t border-white/10 px-4 py-3 flex flex-col gap-2.5 shadow-2xl select-none relative z-30">
-      {/* Progress Scrubber Slider */}
-      <div className="flex items-center gap-3 w-full">
-        <span className="text-xs font-mono text-cyan-400 font-semibold w-14 text-right">
-          {currentStepIndex + 1}/{totalSteps}
+    <div className="relative z-30 flex w-full select-none flex-col gap-2 border-t border-aurora-border bg-white px-3 py-2.5 shadow-[0_-8px_24px_-20px_rgba(23,37,84,0.35)] sm:px-4">
+      {/* Progress scrubber */}
+      <div className="flex w-full items-center gap-2.5 sm:gap-3">
+        <span className="w-auto shrink-0 rounded-md bg-aurora-primary-soft px-2 py-0.5 font-mono text-[11px] font-bold text-aurora-primary">
+          Step {currentStepIndex + 1}
+          <span className="text-aurora-primary/50">/{totalSteps}</span>
         </span>
-        <div className="flex-1 relative">
+        <div className="relative flex-1">
           <Slider
             min={0}
             max={Math.max(0, totalSteps - 1)}
@@ -99,56 +99,56 @@ export const PlaybackControls: React.FC = () => {
             value={[currentStepIndex]}
             onValueChange={([val]) => jumpToStep(val)}
             className="w-full cursor-pointer py-1"
+            aria-label="Jump to step"
           />
         </div>
-        <span className="text-xs font-mono text-muted-foreground w-12">
+        <span className="w-9 shrink-0 text-right font-mono text-[11px] font-semibold text-aurora-muted">
           {Math.round(progressPercent)}%
         </span>
       </div>
 
-      {/* Primary Control Buttons, Sound, Modes & Speed */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        {/* Playback Buttons */}
+      {/* Control bar */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        {/* Transport */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Reset */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-black/30 border-white/10 hover:bg-white/10"
+                  className="h-8 w-8 rounded-lg border-aurora-border bg-white text-aurora-muted hover:bg-aurora-bg hover:text-aurora-text"
                   onClick={reset}
+                  aria-label="Reset the trace"
                 >
-                  <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                  <RotateCcw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Reset (R)</TooltipContent>
+              <TooltipContent>Reset to step 1 (R)</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Step Back */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-black/30 border-white/10 hover:bg-white/10"
+                  className="h-8 w-8 rounded-lg border-aurora-border bg-white text-aurora-text hover:bg-aurora-bg disabled:opacity-40"
                   onClick={stepBackward}
                   disabled={currentStepIndex <= 0}
+                  aria-label="Previous step"
                 >
                   <SkipBack className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Step Back (←)</TooltipContent>
+              <TooltipContent>Step back (←)</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Play / Pause Primary Button */}
           <Button
             size="sm"
-            className="h-8 px-4 font-semibold gap-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
+            className="h-8 gap-1.5 rounded-lg bg-aurora-primary px-4 font-bold text-white shadow-[0_8px_18px_-10px_rgba(99,91,255,0.9)] transition-all hover:bg-aurora-primary-ink active:scale-[0.98]"
             onClick={togglePlay}
           >
             {isPlaying ? (
@@ -158,38 +158,37 @@ export const PlaybackControls: React.FC = () => {
               </>
             ) : (
               <>
-                <Play className="h-4 w-4 fill-current ml-0.5" />
+                <Play className="ml-0.5 h-4 w-4 fill-current" />
                 <span>{currentStepIndex >= totalSteps - 1 ? 'Replay' : 'Play'}</span>
               </>
             )}
           </Button>
 
-          {/* Step Forward */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-black/30 border-white/10 hover:bg-white/10"
+                  className="h-8 w-8 rounded-lg border-aurora-border bg-white text-aurora-text hover:bg-aurora-bg disabled:opacity-40"
                   onClick={stepForward}
                   disabled={currentStepIndex >= totalSteps - 1}
+                  aria-label="Next step"
                 >
                   <SkipForward className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Step Forward (→)</TooltipContent>
+              <TooltipContent>Step forward (→)</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Skip to Backtrack */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-[10px] font-mono border border-purple-500/25 text-purple-300 hover:bg-purple-500/10 hidden xl:flex cursor-pointer"
+                  className="hidden h-8 cursor-pointer border border-aurora-primary/25 px-2 font-mono text-[10px] text-aurora-primary hover:bg-aurora-primary-soft xl:flex"
                   onClick={() => {
                     for (let i = currentStepIndex + 1; i < steps.length; i++) {
                       const st = steps[i];
@@ -206,112 +205,111 @@ export const PlaybackControls: React.FC = () => {
                   }}
                   disabled={currentStepIndex >= totalSteps - 1}
                 >
-                  <span>Skip Backtrack</span>
+                  <span>Skip backtrack</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Jump forward to next backtrack / undo phase</TooltipContent>
+              <TooltipContent>Jump forward to the next backtrack or undo phase</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Skip to Solution */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-[10px] font-mono border border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/10 hidden xl:flex cursor-pointer"
+                  className="hidden h-8 cursor-pointer border border-aurora-secondary/30 px-2 font-mono text-[10px] text-aurora-secondary hover:bg-aurora-secondary-soft xl:flex"
                   onClick={() => jumpToStep(totalSteps - 1)}
                   disabled={currentStepIndex >= totalSteps - 1}
                 >
-                  <span>Skip Solution</span>
+                  <span>Skip to solution</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Jump straight to final solution</TooltipContent>
+              <TooltipContent>Jump straight to the final step</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
 
-        {/* Audio Mute & Why Display Mode Controls */}
-        <div className="flex items-center gap-2">
-          {/* Sound Mute Toggle */}
-          <TooltipProvider>
+        {/* Display options */}
+        <div className="flex flex-wrap items-center gap-2">
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    'h-8 w-8 rounded-lg border transition-all cursor-pointer',
+                    'h-8 w-8 cursor-pointer rounded-lg border transition-all',
                     soundMuted
-                      ? 'border-white/10 text-muted-foreground/60 hover:text-foreground'
-                      : 'border-cyan-500/30 text-cyan-400 bg-cyan-500/10'
+                      ? 'border-aurora-border text-aurora-muted/60 hover:text-aurora-text'
+                      : 'border-aurora-secondary/30 bg-aurora-secondary-soft text-aurora-secondary'
                   )}
                   onClick={toggleSound}
+                  aria-label={soundMuted ? 'Unmute sound effects' : 'Mute sound effects'}
                 >
                   {soundMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{soundMuted ? 'Unmute Sound FX (M)' : 'Mute Sound FX (M)'}</TooltipContent>
+              <TooltipContent>{soundMuted ? 'Unmute sound (M)' : 'Mute sound (M)'}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Auto Pause On Important Steps */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    'h-8 px-2.5 text-xs font-mono rounded-lg border gap-1.5 transition-all cursor-pointer',
+                    'h-8 cursor-pointer gap-1.5 rounded-lg border px-2.5 font-mono text-xs transition-all',
                     autoPauseImportant
-                      ? 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'
-                      : 'border-white/10 text-muted-foreground/70 hover:text-foreground'
+                      ? 'border-aurora-accent/40 bg-aurora-accent-soft text-aurora-accent'
+                      : 'border-aurora-border text-aurora-muted hover:text-aurora-text'
                   )}
                   onClick={toggleAutoPause}
                 >
                   <PauseCircle className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Auto-Pause Key Steps</span>
+                  <span className="hidden sm:inline">Auto-pause key steps</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Automatically pause when item is found, swapped, or rotated</TooltipContent>
+              <TooltipContent>Pause automatically when an item is found, swapped, or rotated</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
-          {/* Why Display Mode (Beginner vs Minimal) */}
-          <div className="flex items-center p-0.5 rounded-lg border border-white/10 bg-black/40 text-[11px] font-mono">
+          <div className="flex items-center rounded-lg border border-aurora-border bg-aurora-bg p-0.5 font-mono text-[11px]">
             <button
               onClick={() => setWhyDisplayMode('beginner')}
               className={cn(
-                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                'cursor-pointer rounded-md px-2 py-0.5 transition-colors',
                 whyDisplayMode === 'beginner'
-                  ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white font-semibold text-aurora-primary shadow-sm'
+                  : 'text-aurora-muted hover:text-aurora-text'
               )}
+              title="Show the full reasoning for every step"
             >
-              Why: All
+              Why: all
             </button>
             <button
               onClick={() => setWhyDisplayMode('minimal')}
               className={cn(
-                'px-2 py-0.5 rounded-md transition-colors cursor-pointer',
+                'cursor-pointer rounded-md px-2 py-0.5 transition-colors',
                 whyDisplayMode === 'minimal'
-                  ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white font-semibold text-aurora-primary shadow-sm'
+                  : 'text-aurora-muted hover:text-aurora-text'
               )}
+              title="Show only the short justification"
             >
               Minimal
             </button>
           </div>
         </div>
 
-        {/* Speed Multiplier Slider */}
+        {/* Speed */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Gauge className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="hidden sm:inline font-medium">Speed:</span>
-            <span className="font-mono font-semibold text-cyan-300 w-9">{speed}x</span>
+          <div className="flex items-center gap-1.5 text-xs text-aurora-muted">
+            <Gauge className="h-3.5 w-3.5 text-aurora-secondary" />
+            <span className="hidden font-medium sm:inline">Speed</span>
+            <span className="w-9 font-mono font-semibold text-aurora-text">{speed}x</span>
           </div>
 
           <div className="w-20 sm:w-28">
@@ -321,19 +319,21 @@ export const PlaybackControls: React.FC = () => {
               step={0.25}
               value={[speed]}
               onValueChange={([val]) => setSpeed(val)}
+              aria-label="Playback speed"
             />
           </div>
 
-          {/* Preset Speed Buttons */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             {[1, 2, 5, 20].map((s) => (
               <Button
                 key={s}
-                variant={speed === s ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
                 className={cn(
-                  'h-7 px-1.5 text-[11px] font-mono rounded cursor-pointer',
-                  speed === s ? 'bg-cyan-500/20 text-cyan-300' : 'text-muted-foreground'
+                  'h-7 cursor-pointer rounded px-1.5 font-mono text-[11px]',
+                  speed === s
+                    ? 'bg-aurora-secondary-soft text-aurora-secondary'
+                    : 'text-aurora-muted hover:text-aurora-text'
                 )}
                 onClick={() => setSpeed(s)}
               >
@@ -342,20 +342,19 @@ export const PlaybackControls: React.FC = () => {
             ))}
           </div>
 
-          {/* Keyboard Shortcuts Hint */}
-          <TooltipProvider>
+          <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="hidden lg:flex items-center gap-1 text-[11px] text-muted-foreground bg-black/40 px-2 py-1 rounded-md border border-white/10 cursor-help">
-                  <Keyboard className="h-3.5 w-3.5 text-cyan-400" />
+                <div className="hidden cursor-help items-center gap-1 rounded-md border border-aurora-border bg-aurora-bg px-2 py-1 text-[11px] text-aurora-muted lg:flex">
+                  <Keyboard className="h-3.5 w-3.5 text-aurora-primary" />
                   <span>Shortcuts</span>
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="text-xs space-y-1 bg-[#0b1020] border-white/15">
-                <div><strong>Space</strong>: Play / Pause</div>
-                <div><strong>← / →</strong>: Step Back / Forward</div>
-                <div><strong>R</strong>: Reset</div>
-                <div><strong>M</strong>: Toggle Sound</div>
+              <TooltipContent className="space-y-1 border-aurora-border bg-white text-xs text-aurora-text">
+                <div><strong>Space</strong>: play / pause</div>
+                <div><strong>← / →</strong>: step back / forward</div>
+                <div><strong>R</strong>: reset</div>
+                <div><strong>M</strong>: toggle sound</div>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

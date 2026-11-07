@@ -16,18 +16,21 @@ export const StepLogPanel: React.FC = () => {
   }, [currentStepIndex]);
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border rounded-xl overflow-hidden shadow-xs select-none">
-      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border bg-muted/40 shrink-0">
+    <div className="flex h-full select-none flex-col overflow-hidden rounded-xl border border-aurora-border bg-white shadow-aurora-sm">
+      <div className="flex shrink-0 items-center justify-between border-b border-aurora-border bg-aurora-bg px-3.5 py-2.5">
         <div className="flex items-center gap-1.5">
-          <History className="w-3.5 h-3.5 text-primary" />
-          <span className="text-xs font-semibold text-foreground">Step Execution Log</span>
+          <History className="h-3.5 w-3.5 text-aurora-primary" />
+          <span className="text-xs font-semibold text-aurora-text">Step log</span>
         </div>
-        <span className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold">
+        <span className="rounded border border-aurora-primary/20 bg-aurora-primary-soft px-2 py-0.5 font-mono text-[10px] font-bold text-aurora-primary">
           Step {currentStepIndex + 1} / {steps.length}
         </span>
       </div>
 
-      <div className="flex-1 min-h-0 p-2 space-y-1.5 overflow-y-auto">
+      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+        <p className="px-1 pb-1 text-[10px] leading-relaxed text-aurora-muted">
+          Click any row to jump to that step. Passed steps are dimmed.
+        </p>
         {steps.map((step: StepAction, idx: number) => {
           const isActive = idx === currentStepIndex;
           const isPassed = idx < currentStepIndex;
@@ -39,49 +42,49 @@ export const StepLogPanel: React.FC = () => {
               ref={isActive ? activeStepRef : null}
               onClick={() => jumpToStep(idx)}
               className={cn(
-                'group flex items-start gap-2.5 p-2 rounded-lg text-xs transition-all cursor-pointer border mb-1.5',
+                'group mb-1.5 flex cursor-pointer items-start gap-2.5 rounded-lg border p-2 text-xs transition-all',
                 isActive
-                  ? 'bg-primary/10 border-primary text-foreground shadow-xs font-semibold'
+                  ? 'border-aurora-primary bg-aurora-primary-soft font-semibold text-aurora-text shadow-aurora-sm'
                   : isPassed
-                  ? 'bg-muted/30 border-border/60 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                  : 'bg-muted/10 border-transparent text-muted-foreground/60 hover:bg-muted/40 hover:text-foreground'
+                    ? 'border-aurora-border/60 bg-aurora-bg/60 text-aurora-muted hover:bg-aurora-bg hover:text-aurora-text'
+                    : 'border-transparent bg-white text-aurora-muted/70 hover:bg-aurora-bg hover:text-aurora-text'
               )}
             >
               {/* Step number badge */}
               <div
                 className={cn(
-                  'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono shrink-0 font-bold border',
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border font-mono text-[10px] font-bold',
                   isActive
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-muted text-muted-foreground border-border'
+                    ? 'border-aurora-primary bg-aurora-primary text-white'
+                    : 'border-aurora-border bg-aurora-bg text-aurora-muted'
                 )}
               >
                 {idx + 1}
               </div>
 
               {/* Step Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1 mb-0.5">
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 flex items-center justify-between gap-1">
                   <span
                     className={cn(
-                      'text-[10px] font-mono font-medium truncate',
-                      isActive ? 'text-primary' : 'text-muted-foreground'
+                      'truncate font-mono text-[10px] font-medium',
+                      isActive ? 'text-aurora-primary' : 'text-aurora-muted'
                     )}
                   >
                     {reason?.action || step.type.toUpperCase()}
                   </span>
                   {reason?.rule && (
-                    <span className="text-[9px] font-mono text-muted-foreground bg-muted/60 px-1 py-0.2 rounded truncate max-w-[120px] border border-border/40">
+                    <span className="max-w-[120px] truncate rounded border border-aurora-border/60 bg-white px-1 py-0.2 font-mono text-[9px] text-aurora-muted">
                       {reason.rule}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] leading-tight line-clamp-2 text-foreground/90 font-mono">
+                <p className="line-clamp-2 font-mono text-[11px] leading-tight text-aurora-text/90">
                   {reason?.why || step.message}
                 </p>
               </div>
 
-              {isActive && <ArrowRight className="w-3.5 h-3.5 text-primary shrink-0 self-center" />}
+              {isActive && <ArrowRight className="h-3.5 w-3.5 shrink-0 self-center text-aurora-primary" />}
             </div>
           );
         })}

@@ -7,22 +7,16 @@ import {
   AlertCircle,
   Calendar,
   Award,
-  Sparkles,
   Search,
-  Filter,
-  Flame,
-  FileCode,
   Terminal,
-  ArrowRight,
-  ChevronRight,
   Code2,
   Users,
   Timer,
-  Check,
   Send,
   X,
-  RotateCcw,
   BookOpen,
+  Info,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { NavView } from '../components/layout/Navbar';
@@ -73,19 +67,42 @@ interface ContestPageProps {
   onNavigate: (view: NavView) => void;
 }
 
-export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
+const STATUS_LABEL: Record<Contest['status'], string> = {
+  live: 'Live now',
+  upcoming: 'Upcoming',
+  completed: 'Completed',
+};
+
+function formatDate(value: string | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate: _onNavigate }) => {
   const { user, token, isAdmin, openAdminDashboard } = useAuth();
   const [contests, setContests] = useState<Contest[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Active Contest Arena Modal State
   const [activeContest, setActiveContest] = useState<Contest | null>(null);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState<'Python' | 'C++' | 'Java' | 'JavaScript'>('Python');
   const [userCode, setUserCode] = useState<string>('');
-  const [testResult, setTestResult] = useState<{ status: 'idle' | 'running' | 'passed' | 'failed'; message: string; output?: string }>({
+  const [testResult, setTestResult] = useState<{
+    status: 'idle' | 'running' | 'passed' | 'failed';
+    message: string;
+    output?: string;
+  }>({
     status: 'idle',
     message: '',
   });
@@ -97,23 +114,27 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
 
   // Default code templates per language
   const starterCodeTemplates: Record<string, string> = {
-    Python: `def solveProblem(nums, k):\n    # Write your optimal O(n) algorithm solution here\n    # Invariant: maintain sliding window / DP state\n    result = []\n    for i in range(len(nums)):\n        # Check invariants\n        pass\n    return result\n`,
-    'C++': `#include <iostream>\n#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> solveProblem(vector<int>& nums, int k) {\n        // Optimal C++ solution\n        vector<int> result;\n        return result;\n    }\n};\n`,
-    Java: `import java.util.*;\n\npublic class Solution {\n    public int[] solveProblem(int[] nums, int k) {\n        // Optimal Java solution\n        return new int[]{};\n    }\n}\n`,
-    JavaScript: `function solveProblem(nums, k) {\n  // Write your optimal solution here\n  const result = [];\n  return result;\n}\n`,
+    Python: `def solve_problem(nums, k):\n    # Write your solution here.\n    # State the invariant you rely on in a comment.\n    result = []\n    for value in nums:\n        result.append(value)\n    return result\n`,
+    'C++': `#include <iostream>\n#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> solveProblem(vector<int>& nums, int k) {\n        // Write your solution here.\n        vector<int> result;\n        return result;\n    }\n};\n`,
+    Java: `import java.util.*;\n\npublic class Solution {\n    public int[] solveProblem(int[] nums, int k) {\n        // Write your solution here.\n        return new int[]{};\n    }\n}\n`,
+    JavaScript: `function solveProblem(nums, k) {\n  // Write your solution here.\n  const result = [];\n  return result;\n}\n`,
   };
 
   // Fetch contests from backend API
   const fetchContests = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const resp = await fetch('/api/contests');
       if (resp.ok) {
         const data = await resp.json();
         if (data.contests) setContests(data.contests);
+      } else {
+        setLoadError('The contests service did not respond successfully. Try again in a moment.');
       }
     } catch (e) {
       console.error('Failed to load contests:', e);
+      setLoadError('Could not reach the contests service. Check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -123,20 +144,32 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
     fetchContests();
   }, []);
 
-  // Timer countdown inside active arena
+  // Timer countdown inside a live arena only
   useEffect(() => {
-    if (!activeContest) return;
+    if (!activeContest || activeContest.status !== 'live') return;
     const interval = setInterval(() => {
       setContestSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, [activeContest]);
 
+  // Close the arena with Escape
+  useEffect(() => {
+    if (!activeContest) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setActiveContest(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeContest]);
+
   const formatTimer = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
     const secs = totalSeconds % 60;
-    return `${hrs > 0 ? `${hrs.toString().padStart(2, '0')}:` : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs > 0 ? `${hrs.toString().padStart(2, '0')}:` : ''}${mins
+      .toString()
+      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleEnterContest = async (contest: Contest) => {
@@ -147,6 +180,7 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
     setSubmissionSuccess(false);
     setContestSecondsRemaining(contest.durationMinutes * 60);
     setArenaTab('problem');
+    setLeaderboard([]);
 
     // Fetch leaderboard
     try {
@@ -166,21 +200,56 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
     setTestResult({ status: 'idle', message: '' });
   };
 
-  const handleRunSampleTests = () => {
-    setTestResult({ status: 'running', message: 'Compiling & executing sample test cases against algorithmic invariants...' });
+  /**
+   * There is no code-execution service in this build, so this is an honest
+   * local readiness check instead of a fake "all tests passed" result.
+   */
+  const handleLocalCheck = () => {
+    const trimmed = userCode.trim();
+    setTestResult({ status: 'running', message: 'Running local readiness check…' });
+
     setTimeout(() => {
+      if (!trimmed) {
+        setTestResult({
+          status: 'failed',
+          message: 'The editor is empty.',
+          output: 'Add your solution before checking readiness.',
+        });
+        return;
+      }
+
+      const hasBody = trimmed.split('\n').filter((line) => line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('#')).length > 3;
+      const hasReturn = /\breturn\b/.test(trimmed);
+
+      if (!hasBody || !hasReturn) {
+        setTestResult({
+          status: 'failed',
+          message: 'The solution still looks like a stub.',
+          output: [
+            hasBody ? '• Body present' : '• Add more than a comment and an empty container',
+            hasReturn ? '• Return statement present' : '• Add a return statement',
+            'This check never executes your code.',
+          ].join('\n'),
+        });
+        return;
+      }
+
       setTestResult({
         status: 'passed',
-        message: 'All Sample Test Cases Passed!',
-        output: 'Test Case 1: [Passed in 2ms - Memory: 4.2 MB]\nTest Case 2: [Passed in 1ms - Memory: 4.1 MB]\nAll assertions satisfied with 100% accuracy.',
+        message: 'Local readiness check passed.',
+        output: [
+          '• Code is non-empty',
+          '• A return statement is present',
+          '• No test cases were executed — this environment has no judge.',
+        ].join('\n'),
       });
-    }, 900);
+    }, 350);
   };
 
   const handleSubmitSolution = async () => {
     if (!activeContest) return;
     setIsSubmitting(true);
-    setTestResult({ status: 'running', message: 'Running hidden system test cases & calculating live score...' });
+    setTestResult({ status: 'running', message: 'Recording your submission…' });
 
     try {
       const activeQ = activeContest.questions[selectedQuestionIndex];
@@ -195,18 +264,25 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
           questionId: activeQ?.id || 'q1',
           code: userCode,
           language: selectedLanguage,
-          passCount: 3,
+          // No judge runs here, so no passes are claimed.
+          passCount: 0,
           totalTests: 3,
         }),
       });
 
       if (resp.ok) {
-        const data = await resp.json();
+        const data = await resp.json().catch(() => ({}));
         setSubmissionSuccess(true);
         setTestResult({
           status: 'passed',
-          message: 'AC (Accepted)! 100 / 100 Points Awarded. Your score has been updated on the campus leaderboard.',
-          output: 'Passed 48/48 hidden stress-test cases. Runtime: 12ms (faster than 94.2% of campus submissions).',
+          message: 'Attempt recorded on the server.',
+          output: [
+            'Your submission was stored with the contest.',
+            'No judge is configured in this environment, so no test passes or score were claimed.',
+            typeof data?.scoreAwarded === 'number' ? `Server-recorded score: ${data.scoreAwarded}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n'),
         });
 
         // Refresh leaderboard
@@ -218,13 +294,13 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
       } else {
         setTestResult({
           status: 'failed',
-          message: 'Submission encountered an error. Please try again.',
+          message: 'The server rejected the submission. Please try again.',
         });
       }
     } catch {
       setTestResult({
         status: 'failed',
-        message: 'Network error submitting solution.',
+        message: 'Network error submitting the attempt.',
       });
     } finally {
       setIsSubmitting(false);
@@ -233,448 +309,512 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
 
   const filteredContests = contests.filter((c) => {
     const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
+    const query = searchQuery.toLowerCase();
     const matchesSearch =
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.description.toLowerCase().includes(searchQuery.toLowerCase());
+      c.title.toLowerCase().includes(query) ||
+      c.topic.toLowerCase().includes(query) ||
+      c.description.toLowerCase().includes(query);
     return matchesStatus && matchesSearch;
   });
 
   const liveContestCount = contests.filter((c) => c.status === 'live').length;
+  const upcomingContestCount = contests.filter((c) => c.status === 'upcoming').length;
+  const completedContestCount = contests.filter((c) => c.status === 'completed').length;
+
+  const activeQuestion = activeContest?.questions?.[selectedQuestionIndex];
+
+  const fieldClass =
+    'w-full rounded-xl border border-aurora-border bg-aurora-bg px-3 py-2 text-xs text-aurora-text outline-none transition-all focus:border-aurora-primary/40 focus:bg-white focus:ring-2 focus:ring-aurora-primary/15';
 
   return (
-    <div className="relative w-full overflow-hidden min-h-screen bg-surface dark:bg-[#070b16] text-on-surface dark:text-[#eaf1ff] font-body-md select-none transition-colors pb-16">
-      {/* Cosmic Glow Accents */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[340px] bg-gradient-to-b from-primary/15 via-secondary-container/15 to-transparent blur-3xl -z-10" />
-      <div className="pointer-events-none absolute top-96 -left-32 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl -z-10" />
-      <div className="pointer-events-none absolute top-[700px] -right-32 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl -z-10" />
+    <div className="relative min-h-screen w-full overflow-hidden bg-aurora-bg pb-16 text-aurora-text">
+      {/* Soft atmosphere */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 h-[22rem] w-[60rem] -translate-x-1/2 rounded-full bg-aurora-primary/8 blur-[110px]" />
+      <div className="pointer-events-none absolute right-0 top-72 h-80 w-80 rounded-full bg-aurora-accent/8 blur-[100px]" />
 
-      {/* Main Header */}
-      <section className="w-full px-4 sm:px-8 pt-8 pb-6">
-        <div className="max-w-7xl mx-auto flex flex-col gap-6">
-          {/* Breadcrumbs & Status Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 font-label-md text-xs text-on-surface-variant dark:text-white/60">
-              <span className="inline-flex items-center gap-1.5 text-primary dark:text-cyan-300 font-bold">
-                <Trophy className="w-4 h-4" />
-                <span>Competitive Arena</span>
-              </span>
-              <span>/</span>
-              <span className="text-on-surface dark:text-white font-semibold">Campus Contests Hub</span>
-              <span>/</span>
-              <span className="font-code-sm text-[11px] text-secondary dark:text-cyan-300 bg-surface-container dark:bg-white/10 px-2.5 py-0.5 rounded-full font-bold">
-                Spring 2026 Season
-              </span>
-            </div>
-
-            {/* Live Counter Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container-lowest dark:bg-white/10 border border-outline-variant/30 dark:border-white/10 text-xs shadow-xs font-mono">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                {liveContestCount} Contest{liveContestCount !== 1 ? 's' : ''} Live Now
-              </span>
-              <span className="text-outline-variant">•</span>
-              <span className="text-on-surface-variant dark:text-white/70">Verified Rankings</span>
-            </div>
+      {/* Header */}
+      <section className="relative mx-auto w-full max-w-7xl px-4 pb-6 pt-6 sm:px-8 sm:pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-aurora-muted">
+            <span className="inline-flex items-center gap-1.5 text-aurora-primary">
+              <Trophy className="h-3.5 w-3.5" />
+              Practice
+            </span>
+            <span className="text-aurora-border">/</span>
+            <span className="text-aurora-text">Contests</span>
           </div>
 
-          {/* Title & Editorial Lead */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pt-2">
-            <div className="max-w-3xl space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container dark:bg-white/10 font-code-sm text-xs text-primary dark:text-cyan-300 uppercase font-bold tracking-wider">
-                <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                <span>College Algorithmic Challenges</span>
-                <span>•</span>
-                <span>Timed Execution</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-aurora-border bg-white px-3.5 py-1.5 text-[11px] font-semibold shadow-aurora-sm">
+            <span
+              className={`h-2 w-2 rounded-full ${liveContestCount > 0 ? 'bg-emerald-500' : 'bg-aurora-muted/40'}`}
+            />
+            <span className="text-aurora-text">
+              {liveContestCount} contest{liveContestCount === 1 ? '' : 's'} live
+            </span>
+            <span className="text-aurora-border">•</span>
+            <span className="text-aurora-muted">
+              {contests.length} listed by the server
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-end">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-aurora-primary-soft px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-aurora-primary">
+              <Trophy className="h-3.5 w-3.5" />
+              Timed practice
+            </span>
+            <h1 className="mt-3 max-w-2xl font-heading text-3xl font-extrabold leading-tight tracking-tight text-aurora-text sm:text-4xl">
+              Practice under a clock.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-aurora-muted sm:text-base">
+              Contests published by your faculty appear here with their real schedule, problem set
+              and server leaderboard. Open one to read the statement, write a solution, and record
+              an attempt.
+            </p>
+          </div>
+
+          {user ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-aurora-border bg-white p-4 shadow-aurora-sm">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-aurora-primary-soft text-aurora-primary">
+                <Award className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <span className="block truncate text-[11px] font-bold uppercase tracking-wider text-aurora-muted">
+                  Signed in as
+                </span>
+                <span className="block truncate text-sm font-bold text-aurora-text">
+                  {(user as any)?.name || (user as any)?.rollNumber || 'Campus candidate'}
+                </span>
+                <span className="block text-[11px] text-aurora-muted">
+                  {(user as any)?.branch || (isAdmin ? 'Administrator' : 'Student')}
+                  {(user as any)?.section ? ` · Section ${(user as any).section}` : ''}
+                </span>
               </div>
-              <h1 className="font-display-lg text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-on-surface dark:text-white">
-                Campus Contests &amp; CodeSprints
-              </h1>
-              <p className="font-body-lg text-sm sm:text-base text-on-surface-variant dark:text-white/70 max-w-2xl leading-relaxed">
-                Compete with students across branches in timed algorithm battles. Solve challenging problems on
-                arrays, trees, graphs, and dynamic programming with instant evaluation and live leaderboards.
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-aurora-border bg-white p-4 shadow-aurora-sm">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-aurora-muted">
+                <Info className="h-3.5 w-3.5 text-aurora-primary" />
+                Sign in required
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-aurora-muted">
+                You can browse contests without signing in. Submitting an attempt needs an
+                authenticated student account so the entry can be attached to you.
               </p>
             </div>
+          )}
+        </div>
 
-            {/* Quick User Profile Pill (Dynamic & Real) */}
-            {user && (
-              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-surface-container-lowest dark:bg-[#0c1222] border border-outline-variant/30 dark:border-white/10 shadow-sm shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 dark:bg-cyan-900/30 text-purple-600 dark:text-cyan-300 flex items-center justify-center font-bold">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="text-[11px] font-mono text-on-surface-variant dark:text-white/60 block uppercase font-semibold">
-                    {(user as any)?.name || (user as any)?.rollNumber || 'Campus Candidate'}
-                  </span>
-                  <div className="flex items-center gap-2 text-xs font-mono">
-                    <span className="text-purple-600 dark:text-cyan-300 font-bold uppercase">
-                      {(user as any)?.branch || (isAdmin ? 'Admin' : 'Student')}
-                    </span>
-                    <span className="text-outline-variant">•</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                      {(user as any)?.section || 'Active'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* Stats */}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'All contests', value: contests.length, hint: 'Published by faculty' },
+            { label: 'Live now', value: liveContestCount, hint: 'Timer running' },
+            { label: 'Upcoming', value: upcomingContestCount, hint: 'Scheduled ahead' },
+            { label: 'Completed', value: completedContestCount, hint: 'Archive and standings' },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-2xl border border-aurora-border bg-white p-4 shadow-aurora-sm">
+              <span className="font-heading text-2xl font-extrabold text-aurora-primary">{stat.value}</span>
+              <span className="mt-0.5 block text-[11px] font-bold text-aurora-text">{stat.label}</span>
+              <span className="mt-1 block text-[10px] leading-snug text-aurora-muted">{stat.hint}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Filters */}
+      <section className="relative mx-auto w-full max-w-7xl px-4 pb-4 sm:px-8">
+        <div className="flex flex-col gap-3 rounded-2xl border border-aurora-border bg-white p-3 shadow-aurora-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-aurora-bg p-1">
+            {(
+              [
+                { id: 'all', label: 'All', count: contests.length },
+                { id: 'live', label: 'Live', count: liveContestCount },
+                { id: 'upcoming', label: 'Upcoming', count: upcomingContestCount },
+                { id: 'completed', label: 'Completed', count: completedContestCount },
+              ] as const
+            ).map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setFilterStatus(filter.id)}
+                aria-pressed={filterStatus === filter.id}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors ${
+                  filterStatus === filter.id
+                    ? 'bg-white text-aurora-primary shadow-sm'
+                    : 'text-aurora-muted hover:text-aurora-text'
+                }`}
+              >
+                {filter.label}
+                <span
+                  className={`rounded-full px-1.5 text-[9px] ${
+                    filterStatus === filter.id ? 'bg-aurora-primary-soft' : 'bg-white'
+                  }`}
+                >
+                  {filter.count}
+                </span>
+              </button>
+            ))}
           </div>
 
-          {/* Filter Bar & Search */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3">
-            <div className="flex items-center gap-1.5 p-1 bg-surface-container-low dark:bg-black/30 rounded-2xl border border-outline-variant/20 dark:border-white/10 overflow-x-auto">
-              <button
-                onClick={() => setFilterStatus('all')}
-                className={`px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold transition-all cursor-pointer ${
-                  filterStatus === 'all'
-                    ? 'bg-primary text-white shadow-xs'
-                    : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
-                }`}
-              >
-                All Contests ({contests.length})
-              </button>
-              <button
-                onClick={() => setFilterStatus('live')}
-                className={`px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  filterStatus === 'live'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span>Live Now ({liveContestCount})</span>
-              </button>
-              <button
-                onClick={() => setFilterStatus('upcoming')}
-                className={`px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold transition-all cursor-pointer ${
-                  filterStatus === 'upcoming'
-                    ? 'bg-purple-600 text-white shadow-xs'
-                    : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
-                }`}
-              >
-                Upcoming
-              </button>
-              <button
-                onClick={() => setFilterStatus('completed')}
-                className={`px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold transition-all cursor-pointer ${
-                  filterStatus === 'completed'
-                    ? 'bg-surface-container-high dark:bg-white/20 text-on-surface dark:text-white shadow-xs'
-                    : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
-                }`}
-              >
-                Past Contests
-              </button>
-            </div>
-
-            {/* Search Box */}
-            <div className="relative flex items-center max-w-xs w-full bg-surface-container-lowest dark:bg-white/5 rounded-2xl px-3.5 py-2 border border-outline-variant/30 dark:border-white/10">
-              <Search className="w-4 h-4 text-outline mr-2 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search contests, topics..."
-                className="w-full bg-transparent text-xs font-mono text-on-surface dark:text-white outline-none placeholder:text-outline-variant"
-              />
-            </div>
+          <div className="relative flex w-full items-center rounded-xl border border-aurora-border bg-aurora-bg px-3 py-2 sm:max-w-xs">
+            <Search className="mr-2 h-4 w-4 shrink-0 text-aurora-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search contests or topics…"
+              className="w-full bg-transparent text-xs text-aurora-text outline-none placeholder:text-aurora-muted/70"
+            />
           </div>
         </div>
       </section>
 
-      {/* Contests Cards Grid */}
-      <section className="w-full px-4 sm:px-8 max-w-7xl mx-auto">
+      {/* Contest list */}
+      <section className="relative mx-auto w-full max-w-7xl px-4 sm:px-8">
         {isLoading ? (
-          <div className="text-center py-20 text-xs font-mono text-on-surface-variant">
-            Loading active campus contests...
+          <div className="rounded-2xl border border-aurora-border bg-white px-6 py-16 text-center text-xs text-aurora-muted">
+            Loading contests from the server…
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-12 text-center">
+            <AlertCircle className="mx-auto h-7 w-7 text-amber-600" />
+            <h3 className="mt-2 text-sm font-bold text-amber-900">Could not load contests</h3>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-amber-800">{loadError}</p>
+            <button
+              type="button"
+              onClick={fetchContests}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700"
+            >
+              Try again
+            </button>
           </div>
         ) : filteredContests.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 dark:border-white/10 space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-surface-container dark:bg-white/10 flex items-center justify-center mx-auto text-on-surface-variant">
-              <Trophy className="w-6 h-6 opacity-60" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-headline-sm text-base font-bold text-on-surface dark:text-white">
-                {searchQuery ? 'No Contests Match Your Search' : 'No Contests Scheduled Yet'}
-              </h3>
-              <p className="text-xs text-on-surface-variant dark:text-white/60 max-w-md mx-auto">
-                {searchQuery
-                  ? 'Try searching with a different keyword or topic filter.'
-                  : 'College faculty and admins can organize contests, timed challenges, and code sprints directly from the Admin Management Console.'}
-              </p>
-            </div>
-            {isAdmin && (
+          <div className="rounded-2xl border border-dashed border-aurora-border bg-white px-6 py-16 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-aurora-bg text-aurora-muted">
+              <Trophy className="h-6 w-6" />
+            </span>
+            <h3 className="mt-3 text-sm font-bold text-aurora-text">
+              {searchQuery
+                ? 'No contests match your search'
+                : filterStatus !== 'all'
+                  ? `No ${STATUS_LABEL[filterStatus].toLowerCase()} contests right now`
+                  : 'No contests have been published yet'}
+            </h3>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-aurora-muted">
+              {searchQuery
+                ? 'Try a different keyword, or clear the search to see every contest.'
+                : 'Contests appear here as soon as faculty publish them from the admin console. Nothing is invented client-side.'}
+            </p>
+            {(searchQuery || filterStatus !== 'all') && (
               <button
-                onClick={() => openAdminDashboard()}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-label-md text-xs font-bold transition-all shadow-sm cursor-pointer"
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilterStatus('all');
+                }}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-aurora-border bg-white px-4 py-2 text-xs font-bold text-aurora-text hover:border-aurora-primary/30 hover:text-aurora-primary"
               >
-                <Trophy className="w-4 h-4" />
-                <span>Organize First Contest (Open Admin Console)</span>
+                Clear filters
+              </button>
+            )}
+            {!searchQuery && filterStatus === 'all' && isAdmin && (
+              <button
+                type="button"
+                onClick={() => openAdminDashboard()}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-aurora-primary px-4 py-2 text-xs font-bold text-white hover:bg-aurora-primary-ink"
+              >
+                <Trophy className="h-4 w-4" />
+                Create a contest in the admin console
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredContests.map((c) => {
-              const isLive = c.status === 'live';
-              const isUpcoming = c.status === 'upcoming';
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredContests.map((contest) => {
+              const isLive = contest.status === 'live';
+              const questionCount = contest.questions?.length ?? 0;
               return (
-                <div
-                  key={c.id}
-                  className={`rounded-3xl p-6 shadow-sm border transition-all flex flex-col justify-between group ${
-                    isLive
-                      ? 'bg-surface-container-lowest dark:bg-[#0c1326] border-emerald-500/40 dark:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-950/20'
-                      : 'bg-surface-container-lowest dark:bg-[#0c1222] border-outline-variant/30 dark:border-white/10 hover:border-primary/40'
+                <article
+                  key={contest.id}
+                  className={`flex flex-col justify-between rounded-2xl border bg-white p-5 shadow-aurora-sm transition-all hover:-translate-y-0.5 hover:shadow-aurora-md ${
+                    isLive ? 'border-emerald-300' : 'border-aurora-border'
                   }`}
                 >
-                  <div className="space-y-4">
-                    {/* Header Badges */}
-                    <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-code-sm text-[11px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                           isLive
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30'
-                            : isUpcoming
-                            ? 'bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30'
-                            : 'bg-surface-container dark:bg-white/10 text-on-surface-variant dark:text-white/60'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : contest.status === 'upcoming'
+                              ? 'bg-aurora-primary-soft text-aurora-primary'
+                              : 'bg-aurora-bg text-aurora-muted'
                         }`}
                       >
-                        {isLive && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
-                        {isLive ? 'LIVE NOW' : isUpcoming ? 'UPCOMING' : 'COMPLETED'}
+                        {isLive && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                        {STATUS_LABEL[contest.status]}
                       </span>
-
-                      <div className="flex items-center gap-1 text-[11px] font-mono text-on-surface-variant dark:text-white/60">
-                        <Clock className="w-3.5 h-3.5 text-outline" />
-                        <span>{c.durationMinutes} mins</span>
-                      </div>
+                      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-aurora-muted">
+                        <Clock className="h-3 w-3" />
+                        {contest.durationMinutes} min
+                      </span>
                     </div>
 
-                    {/* Title & Topic */}
-                    <div>
-                      <h3 className="font-headline-sm text-lg font-bold text-on-surface dark:text-white group-hover:text-primary dark:group-hover:text-cyan-300 transition-colors leading-snug">
-                        {c.title}
-                      </h3>
-                      <p className="font-body-sm text-xs text-on-surface-variant dark:text-white/70 mt-2 line-clamp-2 leading-relaxed">
-                        {c.description}
-                      </p>
-                    </div>
+                    <h3 className="mt-2.5 text-base font-bold leading-snug text-aurora-text">
+                      {contest.title}
+                    </h3>
+                    <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-aurora-muted">
+                      {contest.description}
+                    </p>
 
-                    {/* Metadata Chips */}
-                    <div className="p-3 rounded-2xl bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 dark:border-white/5 space-y-2 text-xs font-mono">
-                      <div className="flex items-center justify-between">
-                        <span className="text-on-surface-variant dark:text-white/60">Topic Focus:</span>
-                        <span className="font-bold text-primary dark:text-cyan-300">{c.topic}</span>
+                    <div className="mt-3 space-y-1.5 rounded-xl border border-aurora-border bg-aurora-bg/70 p-3 font-mono text-[11px]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-aurora-muted">Topic</span>
+                        <span className="font-bold text-aurora-primary">{contest.topic}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-on-surface-variant dark:text-white/60">Questions:</span>
-                        <span className="font-bold text-on-surface dark:text-white">
-                          {(c.questions || []).length} Problems ({c.totalPoints} Pts)
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-aurora-muted">Problems</span>
+                        <span className="font-bold text-aurora-text">
+                          {questionCount} · {contest.totalPoints} pts
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-on-surface-variant dark:text-white/60">Eligibility:</span>
-                        <span className="px-2 py-0.5 rounded-full bg-surface-container dark:bg-white/10 text-[10px] font-bold text-on-surface dark:text-white">
-                          {c.branchEligibility}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-aurora-muted">Eligibility</span>
+                        <span className="max-w-[60%] truncate text-right font-bold text-aurora-text">
+                          {contest.branchEligibility || 'All branches'}
                         </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-aurora-muted">Starts</span>
+                        <span className="text-aurora-text">{formatDate(contest.startTime)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-aurora-muted">Ends</span>
+                        <span className="text-aurora-text">{formatDate(contest.endTime)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Action CTA */}
-                  <div className="mt-5 pt-4 border-t border-outline-variant/20 dark:border-white/10 flex items-center justify-between">
-                    <span className="font-code-sm text-[11px] text-outline dark:text-white/50">
-                      Organized by {c.createdBy}
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-aurora-border pt-3">
+                    <span className="truncate text-[10px] text-aurora-muted">
+                      By {contest.createdBy || 'Faculty'}
                     </span>
-
                     <button
-                      onClick={() => handleEnterContest(c)}
-                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-2xl font-label-md text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                      type="button"
+                      onClick={() => handleEnterContest(contest)}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-[11px] font-bold text-white shadow-sm transition-all active:scale-[0.98] ${
                         isLive
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white shadow-emerald-950/20'
-                          : 'bg-primary hover:bg-primary-container text-white'
+                          ? 'bg-aurora-secondary hover:bg-[#159c8e]'
+                          : 'bg-aurora-primary hover:bg-aurora-primary-ink'
                       }`}
                     >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>{isLive ? 'Enter Contest Arena' : 'View Challenge & Standings'}</span>
+                      <Play className="h-3 w-3 fill-current" />
+                      {isLive ? 'Enter arena' : 'Open contest'}
                     </button>
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
         )}
       </section>
 
-      {/* ================= INTERACTIVE CONTEST ARENA MODAL ================= */}
+      {/* ================= CONTEST ARENA MODAL ================= */}
       {activeContest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-6xl h-[94vh] bg-surface dark:bg-[#090d18] rounded-3xl shadow-2xl border border-outline-variant/30 dark:border-white/15 overflow-hidden flex flex-col">
-            {/* Arena Top Navigation Header */}
-            <div className="px-5 py-3.5 bg-surface-container-low dark:bg-[#0e1628] border-b border-outline-variant/20 dark:border-white/10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold">
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-headline-sm text-sm sm:text-base font-extrabold text-on-surface dark:text-white truncate max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-aurora-text/30 p-2 backdrop-blur-sm sm:p-4">
+          <div className="flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-aurora-border bg-white shadow-aurora-md">
+            {/* Arena header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-aurora-border bg-aurora-bg px-4 py-3 sm:px-5">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-aurora-primary-soft text-aurora-primary">
+                  <Trophy className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="max-w-md truncate text-sm font-extrabold text-aurora-text sm:text-base">
                       {activeContest.title}
                     </h2>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      LIVE CONTEST
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                        activeContest.status === 'live'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : activeContest.status === 'upcoming'
+                            ? 'bg-aurora-primary-soft text-aurora-primary'
+                            : 'bg-white text-aurora-muted'
+                      }`}
+                    >
+                      {STATUS_LABEL[activeContest.status]}
                     </span>
                   </div>
-                  <p className="font-mono text-[11px] text-on-surface-variant dark:text-white/60">
-                    Topic: {activeContest.topic} · Total Marks: {activeContest.totalPoints} Pts
+                  <p className="truncate font-mono text-[10px] text-aurora-muted">
+                    {activeContest.topic} · {activeContest.questions?.length ?? 0} problems ·{' '}
+                    {activeContest.totalPoints} pts
                   </p>
                 </div>
               </div>
 
-              {/* Countdown Clock & Controls */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-black/40 border border-emerald-500/40 text-emerald-400 font-mono text-xs font-bold shadow-xs">
-                  <Timer className="w-4 h-4 text-emerald-400 animate-pulse" />
-                  <span>{formatTimer(contestSecondsRemaining)}</span>
-                </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {activeContest.status === 'live' ? (
+                  <div className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono text-[11px] font-bold text-emerald-700">
+                    <Timer className="h-3.5 w-3.5" />
+                    <span>{formatTimer(contestSecondsRemaining)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 rounded-xl border border-aurora-border bg-white px-3 py-1.5 font-mono text-[11px] text-aurora-muted">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>
+                      {activeContest.status === 'upcoming'
+                        ? `Starts ${formatDate(activeContest.startTime)}`
+                        : `Ended ${formatDate(activeContest.endTime)}`}
+                    </span>
+                  </div>
+                )}
 
-                {/* Tab Switcher: Problem Arena vs Live Leaderboard */}
-                <div className="flex items-center gap-1 bg-surface-container dark:bg-white/5 p-1 rounded-2xl border border-outline-variant/20 dark:border-white/10">
+                <div className="flex items-center gap-1 rounded-xl border border-aurora-border bg-white p-0.5">
                   <button
+                    type="button"
                     onClick={() => setArenaTab('problem')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`rounded-lg px-3 py-1 text-[11px] font-bold transition-colors ${
                       arenaTab === 'problem'
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
+                        ? 'bg-aurora-primary text-white'
+                        : 'text-aurora-muted hover:text-aurora-text'
                     }`}
                   >
-                    Solve Problems
+                    Problem
                   </button>
                   <button
+                    type="button"
                     onClick={() => setArenaTab('leaderboard')}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`inline-flex items-center gap-1 rounded-lg px-3 py-1 text-[11px] font-bold transition-colors ${
                       arenaTab === 'leaderboard'
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'text-on-surface-variant dark:text-white/70 hover:text-on-surface'
+                        ? 'bg-aurora-primary text-white'
+                        : 'text-aurora-muted hover:text-aurora-text'
                     }`}
                   >
-                    <Users className="w-3.5 h-3.5" />
-                    <span>Leaderboard ({leaderboard.length})</span>
+                    <Users className="h-3.5 w-3.5" />
+                    Leaderboard ({leaderboard.length})
                   </button>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => setActiveContest(null)}
-                  className="w-8 h-8 rounded-full hover:bg-surface-container dark:hover:bg-white/10 text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-aurora-border bg-white text-aurora-muted transition-colors hover:bg-aurora-bg hover:text-aurora-text"
+                  aria-label="Close contest arena"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            {/* Arena Main Body */}
+            {/* Arena body */}
             {arenaTab === 'problem' ? (
-              <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
-                {/* Left Column: Question Statement & Invariants */}
-                <div className="w-full lg:w-[45%] h-full border-r border-outline-variant/20 dark:border-white/10 p-5 overflow-y-auto space-y-4">
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+                {/* Left: statement */}
+                <div className="h-full w-full space-y-4 overflow-y-auto border-r border-aurora-border p-4 sm:p-5 lg:w-[45%]">
                   {!activeContest.questions || activeContest.questions.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-3">
-                      <BookOpen className="w-10 h-10 text-outline mx-auto opacity-50" />
-                      <h4 className="font-bold text-base text-on-surface dark:text-white">
-                        No Questions Attached Yet
-                      </h4>
-                      <p className="text-xs text-on-surface-variant dark:text-white/60 max-w-sm">
-                        The administrator hasn't added questions to this contest round yet. Questions will appear once released.
+                    <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                      <BookOpen className="mx-auto h-10 w-10 text-aurora-muted/50" />
+                      <h4 className="mt-2 text-sm font-bold text-aurora-text">No problems attached yet</h4>
+                      <p className="mt-1 max-w-sm text-xs leading-relaxed text-aurora-muted">
+                        The organizer has not released the problem statements for this contest.
+                        Check back after the start time.
                       </p>
                     </div>
                   ) : (
                     <>
-                      {/* Problem Switcher Tabs */}
-                      <div className="flex items-center gap-2 pb-2 border-b border-outline-variant/20 dark:border-white/10">
-                        {activeContest.questions.map((q, idx) => (
+                      <div className="flex flex-wrap items-center gap-2 border-b border-aurora-border pb-3">
+                        {activeContest.questions.map((question, index) => (
                           <button
-                            key={q.id}
-                            onClick={() => setSelectedQuestionIndex(idx)}
-                            className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                              selectedQuestionIndex === idx
-                                ? 'bg-primary-container text-white shadow-sm ring-1 ring-primary/40'
-                                : 'bg-surface-container dark:bg-white/5 text-on-surface-variant dark:text-white/70 hover:bg-surface-container-high'
+                            key={question.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedQuestionIndex(index);
+                              setTestResult({ status: 'idle', message: '' });
+                            }}
+                            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-mono text-[11px] font-bold transition-colors ${
+                              selectedQuestionIndex === index
+                                ? 'bg-aurora-primary text-white'
+                                : 'bg-aurora-bg text-aurora-muted hover:text-aurora-text'
                             }`}
                           >
-                            <span>Problem {String.fromCharCode(65 + idx)}</span>
-                            <span className="text-[10px] opacity-80">({q.points}pts)</span>
+                            Problem {String.fromCharCode(65 + index)}
+                            <span className="text-[9px] opacity-80">{question.points} pts</span>
                           </button>
                         ))}
                       </div>
 
-                      {/* Active Question Info */}
-                      {activeContest.questions[selectedQuestionIndex] && (
+                      {activeQuestion && (
                         <div className="space-y-4">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                                  activeContest.questions[selectedQuestionIndex].difficulty === 'Easy'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : activeContest.questions[selectedQuestionIndex].difficulty === 'Medium'
-                                    ? 'bg-amber-500/20 text-amber-400'
-                                    : 'bg-rose-500/20 text-rose-400'
+                                className={`rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                                  activeQuestion.difficulty === 'Easy'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : activeQuestion.difficulty === 'Medium'
+                                      ? 'bg-amber-50 text-amber-700'
+                                      : 'bg-rose-50 text-rose-700'
                                 }`}
                               >
-                                {activeContest.questions[selectedQuestionIndex].difficulty}
+                                {activeQuestion.difficulty}
                               </span>
-                              <span className="text-xs font-mono text-on-surface-variant dark:text-white/60">
-                                Topic: {activeContest.questions[selectedQuestionIndex].topic}
+                              <span className="font-mono text-[10px] text-aurora-muted">
+                                Topic: {activeQuestion.topic} · {activeQuestion.points} pts
                               </span>
                             </div>
-                            <h3 className="font-headline-sm text-lg font-extrabold text-on-surface dark:text-white">
-                              {activeContest.questions[selectedQuestionIndex].title}
+                            <h3 className="mt-1.5 text-lg font-extrabold text-aurora-text">
+                              {activeQuestion.title}
                             </h3>
                           </div>
 
-                          {/* Statement */}
-                          <div className="p-4 rounded-2xl bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 dark:border-white/5 space-y-2 text-xs leading-relaxed text-on-surface-variant dark:text-white/80">
-                            <span className="font-bold text-on-surface dark:text-white block font-mono">
-                              Problem Statement:
+                          <div className="space-y-1.5 rounded-xl border border-aurora-border bg-aurora-bg/70 p-3.5 text-xs leading-relaxed text-aurora-text/90">
+                            <span className="block font-mono text-[10px] font-bold uppercase tracking-wider text-aurora-muted">
+                              Statement
                             </span>
-                            <p>{activeContest.questions[selectedQuestionIndex].statement}</p>
+                            <p className="whitespace-pre-wrap">{activeQuestion.statement || 'No statement provided.'}</p>
                           </div>
 
-                          {/* Constraints */}
-                          {activeContest.questions[selectedQuestionIndex].constraints && (
-                            <div className="p-3.5 rounded-2xl bg-surface-container-low dark:bg-white/5 border border-outline-variant/20 dark:border-white/5 space-y-1.5 text-xs font-mono">
-                              <span className="font-bold text-on-surface dark:text-white block">
-                                Constraints &amp; Invariants:
+                          {activeQuestion.constraints && (
+                            <div className="space-y-1.5 rounded-xl border border-aurora-border bg-white p-3.5">
+                              <span className="block font-mono text-[10px] font-bold uppercase tracking-wider text-aurora-muted">
+                                Constraints
                               </span>
-                              <p className="text-outline-variant dark:text-cyan-300">
-                                {activeContest.questions[selectedQuestionIndex].constraints}
+                              <p className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-aurora-text/80">
+                                {activeQuestion.constraints}
                               </p>
                             </div>
                           )}
 
-                          {/* Sample Test Cases */}
-                          {(activeContest.questions[selectedQuestionIndex].sampleInput ||
-                            activeContest.questions[selectedQuestionIndex].sampleOutput) && (
-                            <div className="space-y-2 text-xs font-mono">
-                              <span className="font-bold text-on-surface dark:text-white block">
-                                Sample Example 1:
+                          {(activeQuestion.sampleInput || activeQuestion.sampleOutput) && (
+                            <div className="space-y-2">
+                              <span className="block font-mono text-[10px] font-bold uppercase tracking-wider text-aurora-muted">
+                                Provided sample
                               </span>
-                              <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
-                                {activeContest.questions[selectedQuestionIndex].sampleInput && (
+                              <div className="space-y-1.5 rounded-xl border border-aurora-border bg-aurora-bg/70 p-3 font-mono text-[11px]">
+                                {activeQuestion.sampleInput && (
                                   <div>
-                                    <span className="text-emerald-400 font-bold">Input: </span>
-                                    <span className="text-white/90">
-                                      {activeContest.questions[selectedQuestionIndex].sampleInput}
+                                    <span className="font-bold text-aurora-primary">Input: </span>
+                                    <span className="whitespace-pre-wrap text-aurora-text">
+                                      {activeQuestion.sampleInput}
                                     </span>
                                   </div>
                                 )}
-                                {activeContest.questions[selectedQuestionIndex].sampleOutput && (
+                                {activeQuestion.sampleOutput && (
                                   <div>
-                                    <span className="text-cyan-400 font-bold">Expected Output: </span>
-                                    <span className="text-white/90">
-                                      {activeContest.questions[selectedQuestionIndex].sampleOutput}
+                                    <span className="font-bold text-aurora-secondary">Expected output: </span>
+                                    <span className="whitespace-pre-wrap text-aurora-text">
+                                      {activeQuestion.sampleOutput}
                                     </span>
                                   </div>
                                 )}
                               </div>
+                              <p className="text-[10px] text-aurora-muted">
+                                This is the only sample published with the problem. It is not executed
+                                by this page.
+                              </p>
                             </div>
                           )}
                         </div>
@@ -683,166 +823,170 @@ export const ContestPage: React.FC<ContestPageProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                {/* Right Column: Code Editor & Execution Runner */}
-                <div className="w-full lg:w-[55%] h-full flex flex-col bg-slate-950 text-slate-100">
-                  {/* Language Selector & Actions */}
-                  <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                {/* Right: editor */}
+                <div className="flex h-full w-full flex-col bg-white lg:w-[55%]">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-aurora-border bg-aurora-bg px-3 py-2">
                     <div className="flex items-center gap-1.5">
-                      <Code2 className="w-4 h-4 text-cyan-400" />
-                      <span className="font-mono text-xs font-bold text-slate-200">Solution Workspace</span>
+                      <Code2 className="h-4 w-4 text-aurora-primary" />
+                      <span className="font-mono text-[11px] font-bold text-aurora-text">
+                        Your solution
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={selectedLanguage}
-                        onChange={(e) => handleLanguageChange(e.target.value as any)}
-                        className="bg-slate-800 text-xs font-mono text-cyan-300 px-3 py-1 rounded-xl border border-slate-700 outline-none cursor-pointer"
-                      >
-                        <option value="Python">Python 3</option>
-                        <option value="C++">C++ 20</option>
-                        <option value="Java">Java 17</option>
-                        <option value="JavaScript">JavaScript (ES6)</option>
-                      </select>
-                    </div>
+                    <select
+                      value={selectedLanguage}
+                      onChange={(event) => handleLanguageChange(event.target.value as typeof selectedLanguage)}
+                      className="cursor-pointer rounded-lg border border-aurora-border bg-white px-2.5 py-1 font-mono text-[11px] font-semibold text-aurora-text outline-none"
+                    >
+                      <option value="Python">Python 3</option>
+                      <option value="C++">C++ 20</option>
+                      <option value="Java">Java 17</option>
+                      <option value="JavaScript">JavaScript (ES6)</option>
+                    </select>
                   </div>
 
-                  {/* Code Textarea */}
-                  <div className="flex-1 min-h-0 p-3 font-mono text-xs overflow-auto">
+                  <div className="flex min-h-0 flex-1 flex-col p-3">
                     <textarea
                       value={userCode}
-                      onChange={(e) => setUserCode(e.target.value)}
+                      onChange={(event) => setUserCode(event.target.value)}
                       spellCheck={false}
-                      className="w-full h-full bg-transparent resize-none outline-none font-mono text-xs text-slate-100 leading-relaxed"
+                      className="min-h-[200px] w-full flex-1 resize-none rounded-xl border border-aurora-border bg-aurora-bg/60 p-3 font-mono text-xs leading-relaxed text-aurora-text outline-none focus:border-aurora-primary/40 focus:bg-white focus:ring-2 focus:ring-aurora-primary/15"
+                      aria-label="Solution code editor"
                     />
+                    <p className="mt-1.5 flex items-start gap-1.5 text-[10px] leading-relaxed text-aurora-muted">
+                      <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0 text-aurora-accent" />
+                      This build has no judge: your code is not compiled or executed. Submitting
+                      records the attempt without claiming test passes.
+                    </p>
                   </div>
 
-                  {/* Terminal Execution Output Strip */}
                   {testResult.status !== 'idle' && (
-                    <div className="p-3.5 bg-slate-900/90 border-t border-slate-800 font-mono text-xs space-y-1">
+                    <div className="border-t border-aurora-border bg-aurora-bg/60 px-3.5 py-2.5 font-mono text-[11px]">
                       <div className="flex items-center gap-2">
                         {testResult.status === 'running' && (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                          <span className="h-2 w-2 rounded-full bg-amber-500" />
                         )}
                         {testResult.status === 'passed' && (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                         )}
                         {testResult.status === 'failed' && (
-                          <AlertCircle className="w-4 h-4 text-rose-400" />
+                          <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
                         )}
                         <span
                           className={`font-bold ${
                             testResult.status === 'passed'
-                              ? 'text-emerald-400'
+                              ? 'text-emerald-700'
                               : testResult.status === 'failed'
-                              ? 'text-rose-400'
-                              : 'text-amber-300'
+                                ? 'text-rose-700'
+                                : 'text-amber-700'
                           }`}
                         >
                           {testResult.message}
                         </span>
                       </div>
                       {testResult.output && (
-                        <pre className="text-[11px] text-slate-300 whitespace-pre-wrap mt-1">
+                        <pre className="mt-1 whitespace-pre-wrap font-mono text-[10px] leading-relaxed text-aurora-muted">
                           {testResult.output}
                         </pre>
                       )}
                     </div>
                   )}
 
-                  {/* Bottom Action Footer */}
-                  <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-aurora-border bg-white px-3 py-2.5">
                     <button
-                      onClick={handleRunSampleTests}
-                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+                      type="button"
+                      onClick={handleLocalCheck}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-aurora-border bg-white px-3 py-1.5 font-mono text-[11px] font-semibold text-aurora-text transition-colors hover:border-aurora-primary/30 hover:text-aurora-primary"
                     >
-                      <Terminal className="w-3.5 h-3.5" />
-                      <span>Run Sample Tests</span>
+                      <Terminal className="h-3.5 w-3.5" />
+                      Local readiness check
                     </button>
 
                     <button
+                      type="button"
                       onClick={handleSubmitSolution}
-                      disabled={isSubmitting}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white font-mono text-xs font-bold flex items-center gap-2 shadow-md shadow-emerald-950/40 transition-all cursor-pointer disabled:opacity-50"
+                      disabled={isSubmitting || !token}
+                      title={!token ? 'Sign in to submit an attempt' : undefined}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-aurora-secondary px-4 py-2 font-mono text-[11px] font-bold text-white shadow-sm transition-all hover:bg-[#159c8e] disabled:opacity-50"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{isSubmitting ? 'Evaluating...' : 'Submit Final Solution'}</span>
+                      <Send className="h-3.5 w-3.5" />
+                      {isSubmitting ? 'Recording…' : 'Submit attempt'}
                     </button>
                   </div>
+
+                  {submissionSuccess && (
+                    <div className="flex items-start gap-2 border-t border-aurora-border bg-aurora-secondary-soft px-3.5 py-2 text-[10px] leading-relaxed text-aurora-text">
+                      <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-aurora-secondary" />
+                      <span>
+                        Attempt stored for this contest. No score or test pass was claimed because
+                        no judge is configured.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              /* TAB 2: Live Contest Standings & Leaderboard */
-              <div className="flex-1 min-h-0 p-6 overflow-y-auto space-y-4">
-                <div className="flex items-center justify-between">
+              /* Leaderboard tab */
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-6">
+                <div className="flex flex-wrap items-end justify-between gap-2">
                   <div>
-                    <h3 className="font-headline-sm text-base font-bold text-on-surface dark:text-white">
-                      Live Campus Leaderboard
-                    </h3>
-                    <p className="font-mono text-xs text-on-surface-variant dark:text-white/60">
-                      Rankings calculated by total points and submission penalty time.
+                    <h3 className="text-sm font-bold text-aurora-text">Leaderboard</h3>
+                    <p className="mt-0.5 font-mono text-[10px] text-aurora-muted">
+                      Served by the contests API. Rows are shown exactly as returned — nothing is
+                      re-ranked or filled in on the client.
                     </p>
                   </div>
+                  <span className="rounded-full bg-aurora-bg px-2.5 py-0.5 font-mono text-[10px] font-bold text-aurora-muted">
+                    {leaderboard.length} entr{leaderboard.length === 1 ? 'y' : 'ies'}
+                  </span>
                 </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-outline-variant/20 dark:border-white/10">
-                  <table className="w-full text-left font-mono text-xs">
-                    <thead className="bg-surface-container-low dark:bg-white/5 text-on-surface-variant dark:text-white/60 text-[11px] uppercase tracking-wider border-b border-outline-variant/20 dark:border-white/10">
-                      <tr>
-                        <th className="p-3.5">Rank</th>
-                        <th className="p-3.5">Student Name</th>
-                        <th className="p-3.5">Roll Number</th>
-                        <th className="p-3.5">Branch</th>
-                        <th className="p-3.5">Solved</th>
-                        <th className="p-3.5">Score</th>
-                        <th className="p-3.5">Penalty Time</th>
-                        <th className="p-3.5">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/10 dark:divide-white/5">
-                      {leaderboard.map((sub, idx) => (
-                        <tr
-                          key={idx}
-                          className="hover:bg-surface-container-lowest dark:hover:bg-white/[0.02] transition-colors"
-                        >
-                          <td className="p-3.5 font-bold">
-                            {idx === 0 ? (
-                              <span className="text-amber-400 font-bold">🥇 #1</span>
-                            ) : idx === 1 ? (
-                              <span className="text-slate-300 font-bold">🥈 #2</span>
-                            ) : idx === 2 ? (
-                              <span className="text-amber-600 font-bold">🥉 #3</span>
-                            ) : (
-                              <span className="text-on-surface-variant">#{sub.rank || idx + 1}</span>
-                            )}
-                          </td>
-                          <td className="p-3.5 font-bold text-on-surface dark:text-white">
-                            {sub.name}
-                          </td>
-                          <td className="p-3.5 text-primary dark:text-cyan-300 font-semibold">
-                            {sub.rollNumber}
-                          </td>
-                          <td className="p-3.5 text-on-surface-variant dark:text-white/80">
-                            {sub.branch}
-                          </td>
-                          <td className="p-3.5 font-bold text-on-surface dark:text-white">
-                            {sub.problemsSolved} / {sub.totalProblems || 3}
-                          </td>
-                          <td className="p-3.5 font-bold text-emerald-600 dark:text-emerald-400">
-                            {sub.score} Pts
-                          </td>
-                          <td className="p-3.5 text-on-surface-variant dark:text-white/70">
-                            {sub.penaltyTime || '38m'}
-                          </td>
-                          <td className="p-3.5">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                              {sub.status || 'Accepted'}
-                            </span>
-                          </td>
+                {leaderboard.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-aurora-border bg-white px-6 py-14 text-center">
+                    <Users className="mx-auto h-7 w-7 text-aurora-muted/50" />
+                    <h4 className="mt-2 text-sm font-bold text-aurora-text">No submissions yet</h4>
+                    <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-aurora-muted">
+                      The leaderboard fills as students submit attempts for this contest.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-aurora-border">
+                    <table className="w-full min-w-[720px] text-left font-mono text-[11px]">
+                      <thead className="border-b border-aurora-border bg-aurora-bg text-[10px] uppercase tracking-wider text-aurora-muted">
+                        <tr>
+                          <th className="p-3">Rank</th>
+                          <th className="p-3">Student</th>
+                          <th className="p-3">Roll number</th>
+                          <th className="p-3">Branch</th>
+                          <th className="p-3">Solved</th>
+                          <th className="p-3">Score</th>
+                          <th className="p-3">Penalty</th>
+                          <th className="p-3">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-aurora-border/70">
+                        {leaderboard.map((submission, index) => (
+                          <tr key={`${submission.collegeId}-${index}`} className="hover:bg-aurora-bg/50">
+                            <td className="p-3 font-bold text-aurora-text">#{submission.rank || index + 1}</td>
+                            <td className="p-3 font-semibold text-aurora-text">{submission.name || '—'}</td>
+                            <td className="p-3 text-aurora-primary">{submission.rollNumber || '—'}</td>
+                            <td className="p-3 text-aurora-muted">{submission.branch || '—'}</td>
+                            <td className="p-3 text-aurora-text">
+                              {submission.problemsSolved} / {submission.totalProblems}
+                            </td>
+                            <td className="p-3 font-bold text-aurora-secondary">{submission.score} pts</td>
+                            <td className="p-3 text-aurora-muted">{submission.penaltyTime || '—'}</td>
+                            <td className="p-3">
+                              <span className="rounded-full bg-aurora-bg px-2 py-0.5 text-[9px] font-bold text-aurora-muted">
+                                {submission.status || '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

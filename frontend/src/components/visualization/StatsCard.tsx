@@ -223,7 +223,7 @@ export const StatsCard: React.FC = () => {
       },
       {
         label: 'Load Factor α',
-        value: currentStep?.reason?.values?.loadFactor || '0.71',
+        value: currentStep?.reason?.values?.loadFactor ?? '—',
         sub: 'n / capacity',
         icon: <Gauge className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />,
         colorClass: 'text-amber-600 dark:text-amber-400',
@@ -240,14 +240,14 @@ export const StatsCard: React.FC = () => {
     metrics.push(
       {
         label: 'Board State',
-        value: ds.currentCell ? `(${ds.currentCell[0]}, ${ds.currentCell[1]})` : 'Solved',
+        value: ds.currentCell ? `(${ds.currentCell[0]}, ${ds.currentCell[1]})` : 'In progress',
         sub: 'Active cell inspection',
         icon: <Table className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />,
         colorClass: 'text-blue-600 dark:text-blue-400',
       },
       {
         label: 'Placements Made',
-        value: ds.visitedCells?.length || 4,
+        value: ds.visitedCells?.length || 0,
         sub: 'Safe assignments',
         icon: <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />,
         colorClass: 'text-emerald-600 dark:text-emerald-400',
@@ -264,8 +264,8 @@ export const StatsCard: React.FC = () => {
     metrics.push(
       {
         label: 'Moves Made',
-        value: `${currentStepIndex} / 7`,
-        sub: 'Optimal transfers: 2³ - 1',
+        value: `${ds.moveCount ?? currentStepIndex} / ${ds.totalMoves ?? '—'}`,
+        sub: 'Optimal transfers: 2ⁿ - 1',
         icon: <ArrowLeftRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />,
         colorClass: 'text-blue-600 dark:text-blue-400',
       },
@@ -302,7 +302,7 @@ export const StatsCard: React.FC = () => {
       },
       {
         label: 'Operands A & B',
-        value: `${ds.numA || 25} & ${ds.numB || 14}`,
+        value: ds.numA !== undefined && ds.numB !== undefined ? `${ds.numA} & ${ds.numB}` : '—',
         sub: 'Input integers',
         icon: <Layers className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />,
         colorClass: 'text-purple-600 dark:text-purple-400',
@@ -347,7 +347,7 @@ export const StatsCard: React.FC = () => {
     {
       label: 'Space (Worst)',
       value: complexity.space.worst,
-      sub: `Best: ${complexity.time.best}`,
+      sub: 'Auxiliary memory',
       icon: <HardDrive className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />,
       colorClass: 'text-emerald-600 dark:text-emerald-400 font-mono',
     },
@@ -361,21 +361,21 @@ export const StatsCard: React.FC = () => {
   );
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 w-full">
+    <div className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
       {metrics.map((m, idx) => (
         <div
           key={idx}
-          className="flex flex-col p-1.5 sm:p-2 rounded-xl bg-card border border-border/70 shadow-xs hover:border-primary/40 transition-colors"
+          className="flex flex-col rounded-xl border border-aurora-border/70 bg-white p-1.5 shadow-aurora-sm transition-colors hover:border-aurora-primary/40 sm:p-2"
         >
-          <div className="flex items-center justify-between text-muted-foreground text-[10px] mb-0.5">
-            <span className="font-semibold text-foreground/80 truncate">{m.label}</span>
+          <div className="mb-0.5 flex items-center justify-between text-[10px] text-aurora-muted">
+            <span className="truncate font-semibold text-aurora-text/80">{m.label}</span>
             {m.icon}
           </div>
-          <div className={`text-sm sm:text-base font-bold font-mono truncate ${m.colorClass}`}>
+          <div className={`truncate font-mono text-sm font-bold sm:text-base ${m.colorClass}`}>
             {m.value}
           </div>
           {m.sub && (
-            <span className="text-[9px] text-muted-foreground truncate block">
+            <span className="block truncate text-[9px] text-aurora-muted">
               {m.sub}
             </span>
           )}

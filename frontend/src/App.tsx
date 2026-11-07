@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navbar, NavView } from './components/layout/Navbar';
-import { StarfieldCanvas } from './components/canvas/StarfieldCanvas';
+import { AppSidebar } from './components/layout/AppSidebar';
 import { HomePage } from './pages/HomePage';
 import { TopicsPage } from './pages/TopicsPage';
 import { VisualizerPage } from './pages/VisualizerPage';
@@ -19,21 +19,15 @@ function AppShell() {
   const [currentView, setCurrentView] = useState<NavView>('home');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
 
   const { loadFromUrlOrStorage } = useAlgorithmStore();
 
-  // Initialize theme and load algorithm state on mount (Default: Light Theme)
+  // Aurora Learning is a light-only experience.
   useEffect(() => {
-    const savedTheme = localStorage.getItem('algoviz_theme') as 'dark' | 'light' | null;
-    const initialTheme = savedTheme || 'light';
-    setTheme(initialTheme);
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('algoviz_theme', 'light');
 
     loadFromUrlOrStorage();
 
@@ -87,17 +81,6 @@ function AppShell() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAuthenticated, openLoginModal]);
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('algoviz_theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
   const handleNavigate = (view: NavView) => {
     // If not authenticated, block all internal views and show sign in modal immediately
     if (!isAuthenticated && view !== 'home') {
@@ -105,6 +88,7 @@ function AppShell() {
       return;
     }
 
+    setIsMobileNavOpen(false);
     setCurrentView(view);
     const params = new URLSearchParams(window.location.search);
     params.set('view', view);
@@ -128,65 +112,72 @@ function AppShell() {
   };
 
   return (
-    <div className="h-dvh max-h-dvh w-full overflow-hidden bg-background text-foreground flex flex-col font-sans relative selection:bg-primary/20 selection:text-primary">
-      {/* Dynamic Background Atmosphere */}
-      <StarfieldCanvas />
-
-      {/* Kinetic Observatory Top Navigation */}
-      <Navbar
+    <div className="relative flex h-dvh max-h-dvh w-full overflow-hidden bg-aurora-bg font-sans text-aurora-text selection:bg-aurora-primary/20 selection:text-aurora-primary">
+      {/* Aurora Learning navigation: desktop rail + mobile drawer */}
+      <AppSidebar
         currentView={currentView}
         onNavigate={handleNavigate}
-        onOpenCommandPalette={handleOpenCommandPalette}
-        onOpenChatDrawer={handleOpenChatDrawer}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        isAudioMuted={isAudioMuted}
-        onToggleAudio={() => setIsAudioMuted(!isAudioMuted)}
+        mobileOpen={isMobileNavOpen}
+        onCloseMobile={() => setIsMobileNavOpen(false)}
       />
 
-      {/* Main Views Container - Unauthenticated users are strictly confined to the landing page */}
-      <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
-        {(!isAuthenticated || currentView === 'home') && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <HomePage
-              onNavigate={handleNavigate}
+      {/* Content column — the rail sits beside it, so nothing is covered */}
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* Aurora utility header (no duplicate navigation links) */}
+        <Navbar
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          onOpenCommandPalette={handleOpenCommandPalette}
+          onOpenChatDrawer={handleOpenChatDrawer}
+          isAudioMuted={isAudioMuted}
+          onToggleAudio={() => setIsAudioMuted(!isAudioMuted)}
+          onOpenMobileNav={() => setIsMobileNavOpen(true)}
+        />
+
+        {/* Main Views Container - Unauthenticated users are strictly confined to the landing page */}
+        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+          {(!isAuthenticated || currentView === 'home') && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <HomePage
+                onNavigate={handleNavigate}
+                onOpenCommandPalette={handleOpenCommandPalette}
+              />
+            </div>
+          )}
+
+          {isAuthenticated && currentView === 'topics' && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <TopicsPage
+                onNavigate={handleNavigate}
+                onOpenCommandPalette={handleOpenCommandPalette}
+              />
+            </div>
+          )}
+
+          {isAuthenticated && currentView === 'visualizer' && (
+            <VisualizerPage
               onOpenCommandPalette={handleOpenCommandPalette}
             />
-          </div>
-        )}
+          )}
 
-        {isAuthenticated && currentView === 'topics' && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <TopicsPage
-              onNavigate={handleNavigate}
-              onOpenCommandPalette={handleOpenCommandPalette}
-            />
-          </div>
-        )}
+          {isAuthenticated && currentView === 'contests' && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ContestPage onNavigate={handleNavigate} />
+            </div>
+          )}
 
-        {isAuthenticated && currentView === 'visualizer' && (
-          <VisualizerPage
-            onOpenCommandPalette={handleOpenCommandPalette}
-          />
-        )}
+          {isAuthenticated && currentView === 'solver' && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ProblemSolverPage />
+            </div>
+          )}
 
-        {isAuthenticated && currentView === 'contests' && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <ContestPage onNavigate={handleNavigate} />
-          </div>
-        )}
-
-        {isAuthenticated && currentView === 'solver' && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <ProblemSolverPage />
-          </div>
-        )}
-
-        {isAuthenticated && currentView === 'compare' && (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <ComparePage />
-          </div>
-        )}
+          {isAuthenticated && currentView === 'compare' && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <ComparePage />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Global Command Palette (Ctrl/Cmd + K) - Available only when authenticated */}

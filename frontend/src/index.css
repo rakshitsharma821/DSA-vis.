@@ -1,27 +1,36 @@
 @import "tailwindcss";
 
+/*
+ * Aurora Learning is a light-only interface. Without this line Tailwind's
+ * `dark:` utilities react to the operating-system colour scheme, so a user
+ * with OS dark mode enabled gets white-on-white text even though the app
+ * shell is light. Binding the variant to an explicit `.dark` class (which the
+ * app never sets) makes every legacy `dark:` class inert.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    /* AlgoViz Warm Ivory Light Theme (Default) */
-    --background: 36 33% 97%; /* #faf8f5 warm ivory/white */
-    --foreground: 222 47% 11%; /* #0f172a dark slate, AA contrast */
-    --card: 0 0% 100%; /* #ffffff crisp card */
-    --card-foreground: 222 47% 11%;
+    /* Aurora Learning light theme — canonical tokens */
+    --background: 228 100% 98%; /* #f5f7ff */
+    --foreground: 226 26% 21%; /* #172554 */
+    --card: 0 0% 100%; /* #ffffff */
+    --card-foreground: 226 26% 21%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%; /* #2563eb Active Blue-600 */
+    --popover-foreground: 226 26% 21%;
+    --primary: 243 100% 68%; /* #635bff */
     --primary-foreground: 0 0% 100%;
-    --secondary: 36 20% 93%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 36 20% 94%;
+    --secondary: 173 69% 43%; /* #22b8a7 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 228 60% 96%;
     --muted-foreground: 215 16% 47%; /* #64748b */
-    --accent: 221 83% 96%;
-    --accent-foreground: 221 83% 53%;
+    --accent: 245 100% 96%; /* #eeecff */
+    --accent-foreground: 243 100% 68%;
     --destructive: 348 83% 61%; /* rose-500 */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 89%; /* #e2e8f0 crisp light border */
-    --input: 220 13% 89%;
-    --ring: 221 83% 53%;
+    --border: 229 27% 92%; /* #e5e7f0 */
+    --input: 229 27% 92%;
+    --ring: 243 100% 68%;
     --radius: 0.85rem;
 
     /* Canonical DSA Palette visible on Light Theme */
@@ -286,19 +295,65 @@
   --color-algo-visited: hsl(var(--visited));
 }
 
+/*
+ * Aurora Learning — navigation system tokens.
+ * Scoped to the app shell / navigation so page-level theming can migrate
+ * incrementally without a full-site redesign.
+ */
+@theme {
+  --color-aurora-bg: #f5f7ff;
+  --color-aurora-surface: #ffffff;
+  --color-aurora-primary: #635bff;
+  --color-aurora-primary-soft: #eeecff;
+  --color-aurora-primary-ink: #4b43d6;
+  --color-aurora-secondary: #22b8a7;
+  --color-aurora-secondary-ink: #0f8a7d;
+  --color-aurora-secondary-soft: #e6f9f6;
+  --color-aurora-accent: #ff9b54;
+  --color-aurora-accent-ink: #b45a12;
+  --color-aurora-accent-soft: #fff3e9;
+  --color-aurora-text: #172554;
+  --color-aurora-muted: #64748b;
+  --color-aurora-border: #e5e7f0;
+
+  --shadow-aurora-sm: 0 1px 2px rgba(23, 37, 84, 0.04), 0 6px 18px -10px rgba(23, 37, 84, 0.12);
+  --shadow-aurora-md: 0 18px 44px -24px rgba(23, 37, 84, 0.28);
+}
+
+/* Aurora navigation rail: keep chrome light and let labels reflow smoothly. */
+.aurora-rail {
+  transition-property: width;
+  transition-duration: 280ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
+}
+
+.aurora-rail-label {
+  transition-property: opacity, transform, width;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-rail,
+  .aurora-rail-label {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: #05070f;
+  background-color: #f5f7ff;
   color: hsl(var(--foreground));
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.15), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(99, 102, 241, 0.1), transparent 60%);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 12% -10%, rgba(99, 91, 255, 0.08), transparent 65%),
+    radial-gradient(ellipse 55% 40% at 88% 4%, rgba(34, 184, 167, 0.07), transparent 62%);
   background-attachment: fixed;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading {
-  font-family: 'Space Grotesk', var(--font-sans);
+  font-family: var(--font-heading);
 }
 
 code, pre, .font-mono {
@@ -371,12 +426,12 @@ code, pre, .font-mono {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(23, 37, 84, 0.16);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(23, 37, 84, 0.28);
 }
 
 /* Reduced motion respect */

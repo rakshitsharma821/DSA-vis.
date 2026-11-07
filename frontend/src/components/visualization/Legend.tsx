@@ -30,7 +30,7 @@ export const Legend: React.FC = () => {
       items = [
         { label: 'Comparing', color: 'bg-amber-500', desc: 'Active item evaluated against target' },
         { label: 'Target Hit / Found', color: 'bg-emerald-500', desc: 'Search match confirmed' },
-        { label: 'Discarded Half', color: 'bg-slate-300 dark:bg-slate-600', desc: 'Ruled out by ordering rule' },
+        { label: 'Discarded Half', color: 'bg-slate-300', desc: 'Ruled out by ordering rule' },
         { label: 'Pointers (Low/Mid/High)', color: 'bg-blue-600', desc: 'Active search range markers' },
       ];
       break;
@@ -90,7 +90,7 @@ export const Legend: React.FC = () => {
     case 'bit-cells':
       items = [
         { label: 'Bit 1 (Set)', color: 'bg-blue-600', desc: 'Active binary bit 1' },
-        { label: 'Bit 0 (Clear)', color: 'bg-slate-300 dark:bg-slate-700', desc: 'Inactive binary bit 0' },
+        { label: 'Bit 0 (Clear)', color: 'bg-slate-300', desc: 'Inactive binary bit 0' },
         { label: 'Toggled / Result', color: 'bg-amber-500', desc: 'Bitwise operation outcome' },
       ];
       break;
@@ -128,14 +128,14 @@ export const Legend: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center gap-2.5 flex-wrap text-xs px-2.5 py-1.5 bg-muted/30 rounded-lg border border-border/80">
-      <span className="font-bold text-muted-foreground text-[10px] uppercase tracking-wider">
-        Legend:
+    <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-aurora-border/80 bg-aurora-bg px-2.5 py-1.5 text-xs">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-aurora-muted">
+        Legend
       </span>
       {items.map((item) => (
         <div key={item.label} className="flex items-center gap-1.5" title={item.desc}>
-          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color}`} />
-          <span className="text-foreground/90 font-medium text-[11px] whitespace-nowrap">
+          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${item.color}`} />
+          <span className="whitespace-nowrap text-[11px] font-medium text-aurora-text/90">
             {item.label}
           </span>
         </div>

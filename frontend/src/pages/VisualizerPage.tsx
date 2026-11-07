@@ -194,7 +194,7 @@ export const VisualizerPage: React.FC<VisualizerPageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-background relative select-none">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-aurora-bg relative select-none">
       {/* Top Input & Preset Bar - Auto-hides when running so visualizer board moves right to the top */}
       {!isPlaying && (
         <div className="shrink-0 transition-all duration-300">
@@ -211,109 +211,125 @@ export const VisualizerPage: React.FC<VisualizerPageProps> = ({
         />
 
         {/* Center: The Visualization Canvas Board */}
-        <main className="flex-1 min-h-0 flex flex-col min-w-0 overflow-y-auto bg-muted/10 p-2 sm:p-2.5 space-y-1.5">
+        <main className="flex-1 min-h-0 flex flex-col min-w-0 overflow-y-auto bg-aurora-bg/50 p-2 sm:p-2.5 space-y-1.5">
           {/* Header Row: On Start/Play, automatically slides & collapses into a sleek single line */}
           {isPlaying ? (
-            <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-xl bg-card border border-border/80 shadow-xs shrink-0 animate-in fade-in duration-200">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-3 px-3 py-1.5 rounded-xl bg-white border border-aurora-border shadow-aurora-sm shrink-0 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 shrink-0 rounded-full bg-aurora-secondary animate-pulse" />
+                <span className="font-bold text-sm text-aurora-text flex items-center gap-1.5 truncate">
                   {currentAlgorithm.name}
                 </span>
-                <span className="font-code-sm text-[10px] px-2 py-0.2 rounded-full bg-primary/10 text-primary font-semibold">
+                <span className="font-code-sm text-[10px] px-2 py-0.2 rounded-full bg-aurora-primary-soft text-aurora-primary font-semibold shrink-0">
                   {currentAlgorithm.difficulty}
                 </span>
               </div>
 
               {/* Live Inline Telemetry Chips - Takes minimal space, elevates the board */}
               <div className="flex items-center gap-2 sm:gap-3 font-mono text-xs">
-                <span className="text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded">
+                <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded">
                   {comparisons} comps
                 </span>
-                <span className="text-fuchsia-600 dark:text-fuchsia-400 font-bold bg-fuchsia-500/10 px-2 py-0.5 rounded">
+                <span className="text-fuchsia-700 font-bold bg-fuchsia-50 px-2 py-0.5 rounded">
                   {swaps} swaps
                 </span>
-                <span className="text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded">
+                <span className="text-aurora-primary font-bold bg-aurora-primary-soft px-2 py-0.5 rounded">
                   Step {currentStepIndex + 1}/{steps.length}
                 </span>
-                <span className="text-muted-foreground hidden sm:inline bg-muted px-2 py-0.5 rounded">
-                  Avg: {currentAlgorithm.complexity.time.average}
+                <span className="text-aurora-muted hidden sm:inline bg-aurora-bg px-2 py-0.5 rounded">
+                  Avg {currentAlgorithm.complexity.time.average}
                 </span>
-                <span className="text-emerald-600 dark:text-emerald-400 hidden sm:inline bg-emerald-500/10 px-2 py-0.5 rounded font-bold">
-                  Space: {currentAlgorithm.complexity.space.worst}
+                <span className="text-aurora-secondary hidden sm:inline bg-aurora-secondary-soft px-2 py-0.5 rounded font-bold">
+                  Space {currentAlgorithm.complexity.space.worst}
                 </span>
               </div>
             </div>
           ) : (
             <>
               {/* Paused state Header */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-border/60 shrink-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
-                    {currentAlgorithm.name}
-                  </h1>
-                  <Badge variant="outline" className="text-[10px] font-semibold py-0">
-                    {currentAlgorithm.difficulty}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[10px] py-0 hidden sm:inline-flex">
-                    {currentAlgorithm.part === 'ds' ? 'Part 1: Data Structures' : 'Part 2: Algorithms'} • {currentAlgorithm.categoryName}
-                  </Badge>
+              <div className="shrink-0 rounded-xl border border-aurora-border bg-white px-3 py-2.5 shadow-aurora-sm">
+                <div className="flex items-start justify-between flex-wrap gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-aurora-primary">
+                        Observatory · step by step
+                      </span>
+                      <Badge variant="outline" className="text-[10px] font-semibold py-0 border-aurora-border">
+                        {currentAlgorithm.difficulty}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px] py-0 hidden sm:inline-flex bg-aurora-bg text-aurora-muted">
+                        {currentAlgorithm.part === 'ds' ? 'Part 1 · Data structures' : 'Part 2 · Algorithms'} · {currentAlgorithm.categoryName}
+                      </Badge>
+                    </div>
+                    <h1 className="mt-1 text-base sm:text-lg font-bold tracking-tight text-aurora-text">
+                      {currentAlgorithm.name}
+                    </h1>
+                    <p className="mt-0.5 max-w-2xl text-[11px] leading-relaxed text-aurora-muted">
+                      {currentAlgorithm.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1 md:hidden border-aurora-border"
+                      onClick={() => setIsMobilePanelOpen(true)}
+                    >
+                      <Code2 className="w-3.5 h-3.5 text-aurora-primary" />
+                      <span>Code</span>
+                    </Button>
+
+                    <Button
+                      variant={isChatOpen ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="h-7 text-xs gap-1 border-aurora-primary/30 text-aurora-primary hover:bg-aurora-primary-soft"
+                      onClick={() => setIsChatOpen(!isChatOpen)}
+                    >
+                      <Bot className="w-3.5 h-3.5" />
+                      <span>{isChatOpen ? 'Close' : 'Ask AI'}</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={handleShare}
+                    >
+                      {copiedUrl ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-aurora-secondary" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="w-3.5 h-3.5 text-aurora-muted" />
+                          <span>Share</span>
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-aurora-muted hover:text-aurora-text hidden lg:flex"
+                      onClick={() => setIsExplanationOpen(!isExplanationOpen)}
+                      aria-label="Toggle explanation tab"
+                    >
+                      {isExplanationOpen ? (
+                        <PanelRightClose className="w-4 h-4" />
+                      ) : (
+                        <PanelRightOpen className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1 md:hidden border-white/20"
-                    onClick={() => setIsMobilePanelOpen(true)}
-                  >
-                    <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Code</span>
-                  </Button>
-
-                  <Button
-                    variant={isChatOpen ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
-                    onClick={() => setIsChatOpen(!isChatOpen)}
-                  >
-                    <Bot className="w-3.5 h-3.5" />
-                    <span>{isChatOpen ? 'Close' : 'Ask AI'}</span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    onClick={handleShare}
-                  >
-                    {copiedUrl ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Share</span>
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground hidden lg:flex"
-                    onClick={() => setIsExplanationOpen(!isExplanationOpen)}
-                    aria-label="Toggle explanation tab"
-                  >
-                    {isExplanationOpen ? (
-                      <PanelRightClose className="w-4 h-4" />
-                    ) : (
-                      <PanelRightOpen className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-aurora-border/70 pt-1.5 text-[10px] font-medium text-aurora-muted">
+                  <span>Step {currentStepIndex + 1} of {steps.length}</span>
+                  <span className="text-aurora-border">•</span>
+                  <span>Highlights show the current operation. Read the reason in the right panel before advancing.</span>
+                </p>
               </div>
 
               {/* Compact Stats Bar */}
@@ -324,39 +340,41 @@ export const VisualizerPage: React.FC<VisualizerPageProps> = ({
           )}
 
           {/* Canvas Box (Takes maximum vertical height now) */}
-          <div className="flex-1 min-h-[380px] rounded-2xl border border-white/10 bg-card/60 backdrop-blur-md shadow-sm flex flex-col justify-between overflow-hidden relative">
+          <div className="flex-1 min-h-[380px] rounded-2xl border border-aurora-border bg-white shadow-aurora-sm flex flex-col justify-between overflow-hidden relative">
             {/* Top Toolbar: Legend + Zoom & Pan Controls */}
-            <div className="p-1.5 sm:p-2 border-b border-border/80 bg-muted/30 flex items-center justify-between flex-wrap gap-2 shrink-0">
+            <div className="p-1.5 sm:p-2 border-b border-aurora-border bg-aurora-bg/60 flex items-center justify-between flex-wrap gap-2 shrink-0">
               <Legend />
 
-              <div className="flex items-center gap-1 bg-black/40 border border-white/10 rounded-lg p-0.5 text-xs">
+              <div className="flex items-center gap-1 bg-white border border-aurora-border rounded-lg p-0.5 text-xs shadow-aurora-sm">
                 <button
                   onClick={handleZoomOut}
-                  className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                  title="Zoom Out"
+                  className="p-1 rounded hover:bg-aurora-bg text-aurora-muted hover:text-aurora-text cursor-pointer transition-colors"
+                  title="Zoom out"
+                  aria-label="Zoom out"
                 >
                   <ZoomOut className="w-3.5 h-3.5" />
                 </button>
-                <span className="font-mono text-[11px] text-cyan-300 px-1 min-w-[36px] text-center">
+                <span className="font-mono text-[11px] text-aurora-primary px-1 min-w-[36px] text-center font-bold">
                   {Math.round(zoomScale * 100)}%
                 </span>
                 <button
                   onClick={handleZoomIn}
-                  className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                  title="Zoom In"
+                  className="p-1 rounded hover:bg-aurora-bg text-aurora-muted hover:text-aurora-text cursor-pointer transition-colors"
+                  title="Zoom in"
+                  aria-label="Zoom in"
                 >
                   <ZoomIn className="w-3.5 h-3.5" />
                 </button>
-                <div className="w-[1px] h-3 bg-white/20 mx-0.5" />
+                <div className="w-[1px] h-3 bg-aurora-border mx-0.5" />
                 {/* Fit Option Button (Active Highlight) */}
                 <button
                   onClick={handleToggleFit}
                   className={`px-2 py-0.5 rounded text-[11px] cursor-pointer flex items-center gap-1 transition-all ${
                     isFitActive
-                      ? 'bg-primary text-white font-bold shadow-xs ring-1 ring-primary/40'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+                      ? 'bg-aurora-primary text-white font-bold shadow-xs'
+                      : 'text-aurora-muted hover:text-aurora-text hover:bg-aurora-bg'
                   }`}
-                  title={`Fit to Window (${Math.round(zoomScale * 100)}%)`}
+                  title={isFitActive ? 'Fit is on — switch to 100%' : `Fit board to window (${Math.round(zoomScale * 100)}%)`}
                 >
                   <Maximize2 className="w-3 h-3" />
                   <span>Fit</span>
@@ -389,11 +407,11 @@ export const VisualizerPage: React.FC<VisualizerPageProps> = ({
 
         {/* Mobile Slide-Up Drawer for Explanation / Code */}
         {isMobilePanelOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm md:hidden flex flex-col justify-end">
-            <div className="bg-card border-t border-border rounded-t-2xl h-[80vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300">
-              <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
-                <span className="text-xs font-bold font-mono text-cyan-400">
-                  {currentAlgorithm.name} — Code & Explanation
+          <div className="fixed inset-0 z-50 bg-aurora-text/25 backdrop-blur-[2px] md:hidden flex flex-col justify-end">
+            <div className="bg-white border-t border-aurora-border rounded-t-2xl h-[80vh] flex flex-col overflow-hidden shadow-aurora-md animate-in slide-in-from-bottom duration-300">
+              <div className="flex items-center justify-between p-3 border-b border-aurora-border bg-aurora-bg">
+                <span className="text-xs font-bold text-aurora-primary">
+                  {currentAlgorithm.name} - Code &amp; Explanation
                 </span>
                 <Button
                   variant="ghost"
